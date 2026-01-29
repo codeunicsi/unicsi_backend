@@ -161,8 +161,13 @@ export const supplierKycVerification = async (req) => {
             {
                 model: supplier_gst_details,
                 as: "gst_details",
+            },
+            {
+                model: SupplierKyc,
+                as: "kyc_details",
             }
-           ]
+           ],
+           exclude: ["gst_details.supplierSupplierId", "kyc_details.supplierSupplierId"],
         });
         return { success: true, message: "Suppliers fetched successfully", count: suppliers.length, data: suppliers };
     } catch (error) {
@@ -184,7 +189,23 @@ export const verifySupplier = async (req) => {
             };
         }
 
-        supplier.account_status = status;
+        const kyc = await SupplierKyc.findOne({
+            where: {
+                supplier_id: supplier_id,
+            },
+        });
+
+        if (!kyc) {
+            return {
+                success: false,
+                message: "KYC not found",
+            };
+        }
+
+        kyc.status = "verified";
+        await kyc.save();
+
+        supplier.account_status = "active";
         await supplier.save();
 
         return { success: true, data: supplier };
@@ -195,7 +216,7 @@ export const verifySupplier = async (req) => {
 
 export const rejectSupplierProof = async (req) => {
     try {
-        const { supplier_id, reason } = req.body;
+        const { supplier_id, rejection_reason, status } = req.body;
 
         // find supplier by id
         const supplier = await Supplier.findByPk(supplier_id);
@@ -208,10 +229,24 @@ export const rejectSupplierProof = async (req) => {
         }
 
         supplier.account_status = "suspended";
-        supplier.reason = reason;
         await supplier.save();
 
-        // const 
+        const kyc = await SupplierKyc.findOne({
+            where: {
+                supplier_id: supplier_id,
+            },
+        });
+
+        if (!kyc) {
+            return {
+                success: false,
+                message: "KYC not found",
+            };
+        }
+
+        kyc.status = status;
+        kyc.reason = rejection_reason;
+        await kyc.save();
 
         return { success: true, data: supplier };
     } catch (error) {

@@ -20,7 +20,7 @@ export const SupplierKyc = sequelize.define("supplier_kyc", {
         allowNull: true,
     },
 
-    kyc_status: {
+    status: {
         type: DataTypes.ENUM("pending", "verified", "rejected"),
         defaultValue: "pending",
     },

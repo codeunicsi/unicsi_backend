@@ -16,9 +16,9 @@ router.get("/get-all-suppliers", SuperAdminController.getAllSupplier);
 router.get("/get-all-kyc-verifications", SuperAdminController.supplierKycVerification);
 
 // supplier verify
-router.patch("/supplier-verify", SuperAdminController.verifySupplier);
+router.post("/supplier-verify", SuperAdminController.verifySupplier);
 
 // supplier reject
-router.post("/supplier-reject", SuperAdminController.rejectSupplierProof);
+router.post("/supplier/kyc/reject", SuperAdminController.rejectSupplierProof);
 
 export default router;
