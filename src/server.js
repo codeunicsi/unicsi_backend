@@ -31,10 +31,9 @@ const app = express();
 app.use(
   cors({
     origin: [
-      "http://localhost:3000",
-      "http://localhost:5173", //your React dev server
-      "https://capable-mooncake-8f037f.netlify.app", //your React dev server
-      "https://unicse.pages.dev", // your deployed site
+      process.env.FRONTEND_URL1,
+      process.env.FRONTEND_URL2, 
+
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
@@ -59,9 +58,30 @@ app.use("/api/v1/", routes);
 app.use("/uploads", express.static("uploads"));
 
 // Basic test route
-app.get("/", (req, res) => {
-  res.send("🚀 Unicsi Backend with PostgreSQL + OTP Service Running");
+app.get("/health", (req, res) => {
+    res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    service: 'Unicsi Backend API',
+  })
 });
+
+//not found route
+app.use((req, res) => {
+  res.status(404).json({
+    status: 'error',
+    message: 'Route not found',
+  })
+})
+
+//error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack)
+  res.status(500).json({
+    status: 'error',
+    message: 'Internal server error',
+  })
+})
 
 // Start Express server
 const PORT = process.env.PORT || 5000;
