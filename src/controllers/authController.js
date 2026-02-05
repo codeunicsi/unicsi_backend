@@ -131,12 +131,12 @@ export const login = async (req, res) => {
 
     let supplier = null;
     let payload = { role: user.role };
-    
+
     if (user.role === "SUPPLIER") {
       supplier = await Supplier.findOne({ where: { email } });
       payload.supplierId = supplier.supplier_id;
     }
-  
+
     if (user.role === "ADMIN") {
       payload.userId = user.user_id;
     }
@@ -153,29 +153,34 @@ export const login = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    // 🍪 Set access_token cookie
-    res.cookie("access_token", accessToken, {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax", // Changed from "strict" for cross-origin
-      maxAge: 1 * 60 * 60 * 1000
-    });
+      sameSite: "lax",
+      domain: ".unicsi.com",   // ⭐⭐⭐ MUST ADD
+      path: "/"
+    };
+
+    // 🍪 Set access_token cookie
+    res.cookie("access_token", accessToken, cookieOptions,
+      {
+        maxAge: 1 * 60 * 60 * 1000
+      }
+    );
 
     // 🍪 Set refresh_token cookie
-    res.cookie("refresh_token", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+    res.cookie("refresh_token", refreshToken, cookieOptions, 
+      {
+        maxAge: 1 * 60 * 60 * 1000
+      }
+    );
 
     // ⭐ ADD THIS: Set user_role cookie
-    res.cookie("user_role", user.role.toLowerCase(), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 1 * 60 * 60 * 1000
-    });
+    res.cookie("user_role", user.role.toLowerCase(), cookieOptions,
+      {
+        maxAge: 1 * 60 * 60 * 1000
+      }
+    );
 
     return res.status(200).json({
       success: true,
