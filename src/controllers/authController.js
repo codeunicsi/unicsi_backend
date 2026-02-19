@@ -227,14 +227,27 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    res.clearCookie("access_token");
-    res.clearCookie("refresh_token");
+    const isProd = process.env.NODE_ENV === "production";
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? "none" : "lax",
+      path: "/",
+      domain: isProd ? ".unicsi.com" : "localhost"
+    };
+
+    res.clearCookie("access_token", cookieOptions);
+    res.clearCookie("refresh_token", cookieOptions);
+    res.clearCookie("user_role", cookieOptions);
+
     return res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.error("Logout Error:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 

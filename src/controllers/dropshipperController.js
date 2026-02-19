@@ -62,7 +62,7 @@ class DropshipperController {
                 scope,
             });
 
-            res.redirect("http://localhost:3000/partner/connect/success");
+            res.redirect(`${process.env.FRONTEND_URL2}/partner/connect/success`);
 
         } catch (error) {
             console.error("Error connecting to Shopify:", error);
