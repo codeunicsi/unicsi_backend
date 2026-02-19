@@ -157,13 +157,13 @@ export const login = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      domain: ".unicsi.com",   // ⭐⭐⭐ MUST ADD
-      path: "/"
-    };
+    // const cookieOptions = {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === "production",
+    //   sameSite: "lax",
+    //   domain: ".unicsi.com",   // ⭐⭐⭐ MUST ADD
+    //   path: "/"
+    // };
 
     // const cookieOptions = {
     //   httpOnly: true,
@@ -172,6 +172,17 @@ export const login = async (req, res) => {
     //   domain: "localhost",
     //   path: "/"
     // };
+
+  const isProd = process.env.NODE_ENV === "production";
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: isProd,                 // only true in https
+      sameSite: isProd ? "none" : "lax",
+      domain: isProd ? ".unicsi.com" : "localhost",
+      path: "/",
+    };
+
 
     // 🍪 Set access_token cookie
     res.cookie("access_token", accessToken, cookieOptions,
