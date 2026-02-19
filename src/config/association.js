@@ -17,8 +17,13 @@ import { User } from "../models/User.js";
 // SupplierToken.belongsTo(Supplier);
 
 // Supplier → Product
-Supplier.hasMany(Product, { foreignKey: "supplier_id" });
-Product.belongsTo(Supplier);
+Supplier.hasMany(Product, { foreignKey: "supplier_id" },
+    { as: "products" }
+);
+Product.belongsTo(Supplier, {
+    foreignKey: "supplier_id",
+    as: "supplier",
+});
 
 // Product → Variant
 Product.hasMany(ProductVariant, {
@@ -27,6 +32,7 @@ Product.hasMany(ProductVariant, {
 });
 ProductVariant.belongsTo(Product, {
     foreignKey: "product_id",
+    as: "product",
 });
 
 // Variant → Images
@@ -36,6 +42,7 @@ Product.hasMany(ProductImage, {
 });
 ProductImage.belongsTo(Product, {
     foreignKey: "product_id",
+    as: "product",
 });
 
 // Supplier → Warehouse

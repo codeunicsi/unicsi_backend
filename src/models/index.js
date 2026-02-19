@@ -17,6 +17,7 @@ import { Order } from "./Order.js";
 import { OrderStatusHistory } from "./order_status_history.js";
 import { supplier_bank_details } from "./supplier_bank_details.js";
 import { supplier_gst_details } from "./supplier_gst_details.js";
+import { ShopifyStore } from "./shopify_store.js";
 
 export {
     Supplier,
@@ -37,5 +38,6 @@ export {
     Order,
     OrderStatusHistory,
     supplier_bank_details,
-    supplier_gst_details
+    supplier_gst_details,
+    ShopifyStore
 }

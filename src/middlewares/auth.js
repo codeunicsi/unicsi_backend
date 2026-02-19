@@ -3,20 +3,29 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export const auth = (req, res, next) => {
+  let token = null;
+
+  // 1️⃣ First check Authorization header
   const header = req.headers.authorization || "";
-  console.log(header);
-  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
-  console.log(token);
-  if (!token) return res.status(401).json({ message: "No token provided" });
+  if (header.startsWith("Bearer ")) {
+    token = header.slice(7);
+  }
+
+  // 2️⃣ If not found, check cookies
+  if (!token && req.cookies?.access_token) {
+    token = req.cookies.access_token;
+  }
+
+  if (!token) {
+    return res.status(401).json({ message: "No token provided" });
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-    console.log(decoded);
     req.user = decoded; // { id, role }
     next();
   } catch (e) {
-    console.log(e.message);
-    res.status(401).json({ message: e.message });
+    return res.status(401).json({ message: e.message });
   }
 };
 

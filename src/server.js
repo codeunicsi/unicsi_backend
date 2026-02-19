@@ -6,6 +6,7 @@ import sequelize, { connectDB } from "./config/database.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import('../src/config/association.js')
+import cookieParser from "cookie-parser";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -27,7 +28,11 @@ const app = express();
 /* FIXED CORS CONFIGURATION:
    - Allows frontend from localhost:5173 (Vite dev)
    - Allows deployed frontend from unicse.pages.dev (production)
+   
 */
+
+app.set("trust proxy", 1); // ⭐⭐⭐ MUST ADD
+
 app.use(
   cors({
     origin: [
@@ -43,6 +48,7 @@ app.use(
 
 // Enable JSON parsing for incoming requests
 app.use(express.json());
+app.use(cookieParser());
 
 // Connect to PostgreSQL Database
 connectDB();

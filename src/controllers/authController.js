@@ -141,10 +141,14 @@ export const login = async (req, res) => {
       payload.userId = user.user_id;
     }
 
+    if (user.role === "RESELLER") {
+      payload.userId = user.user_id;
+    }
+
     const accessToken = jwt.sign(
       payload,
       process.env.JWT_ACCESS_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: "7d" }
     );
 
     const refreshToken = jwt.sign(
@@ -161,27 +165,35 @@ export const login = async (req, res) => {
       path: "/"
     };
 
+    // const cookieOptions = {
+    //   httpOnly: true,
+    //   secure: true,
+    //   sameSite: "none",
+    //   domain: "localhost",
+    //   path: "/"
+    // };
+
     // 🍪 Set access_token cookie
     res.cookie("access_token", accessToken, cookieOptions,
       {
-        maxAge: 1 * 60 * 60 * 1000
+        maxAge: 7 * 24 * 60 * 60 * 1000
       }
     );
 
     // 🍪 Set refresh_token cookie
     res.cookie("refresh_token", refreshToken, cookieOptions, 
       {
-        maxAge: 1 * 60 * 60 * 1000
+        maxAge: 7 * 24 * 60 * 60 * 1000
       }
     );
 
     // ⭐ ADD THIS: Set user_role cookie
     res.cookie("user_role", user.role.toLowerCase(), cookieOptions,
       {
-        maxAge: 1 * 60 * 60 * 1000
+        maxAge: 7 * 24 * 60 * 60 * 1000
       }
     );
-
+    
     return res.status(200).json({
       success: true,
       message: "Login successful",

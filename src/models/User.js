@@ -32,5 +32,13 @@ export const User = sequelize.define("User", {
     allowNull: false,
     defaultValue: "ACTIVE",
   },
+  shopify_store: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  shopify_access_token: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 });
 export default User;

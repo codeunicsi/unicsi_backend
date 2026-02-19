@@ -5,6 +5,8 @@ import adminRoutes from "./adminRoutes.js";
 import marketplaceRoutes from "./marketplaceRoutes.js";
 import orderRoutes from "./orderRoutes.js";
 import supplierRoutes from "./supplierRoutes.js";
+import dropshipperRoutes from "./dropshipperRoutes.js";
+// import shopifyRoute from "./shopifyAuth.js"
 const router = express.Router();
 
 router.use("/auth", authRoutes);
@@ -15,6 +17,9 @@ router.use("/auth", authRoutes);
 
 router.use("/suppliers", supplierRoutes);
 router.use("/admin", adminRoutes);
+
+//dropshipper
+router.use("/dropshipper", dropshipperRoutes);
 
 
 export default router;

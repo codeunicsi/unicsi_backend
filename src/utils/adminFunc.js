@@ -7,19 +7,19 @@ export const getPendingProducts = async (req, res) => {
             include: [
                 {
                     model: ProductVariant,
-                    as: "variants",
-                    include: [
-                        {
-                            model: ProductImage,
-                            as: "images",
-                        },
-                    ],
+                    as: "variants"
                 },
+                {
+                    model: ProductImage,
+                    as: "images",
+                }
             ],
         });
 
         return {
             success: true,
+            message: "Pending products fetched successfully",
+            count: products.length,
             data: products,
         }
 
@@ -45,13 +45,11 @@ export const getProductById = async (req) => {
                 {
                     model: ProductVariant,
                     as: "variants",
-                    include: [
-                        {
-                            model: ProductImage,
-                            as: "images",
-                        },
-                    ],
                 },
+                {
+                    model: ProductImage,
+                    as: "images",
+                }
             ],
         });
         return { success: true, data: product };
@@ -117,7 +115,7 @@ export const modifiedProducts = async (req) => {
     try {
         const { product_id, variant_id } = req.params;
 
-        console.log("variant-data-id",product_id, variant_id);
+        console.log("variant-data-id", product_id, variant_id);
 
         const { price, dimensions_cm, weight_kg, } = req.body;
         const variant = await ProductVariant.findByPk(variant_id);
@@ -157,17 +155,17 @@ export const getAllSupplier = async (req) => {
 export const supplierKycVerification = async (req) => {
     try {
         const suppliers = await Supplier.findAll({
-           include: [
-            {
-                model: supplier_gst_details,
-                as: "gst_details",
-            },
-            {
-                model: SupplierKyc,
-                as: "kyc_details",
-            }
-           ],
-           exclude: ["gst_details.supplierSupplierId", "kyc_details.supplierSupplierId"],
+            include: [
+                {
+                    model: supplier_gst_details,
+                    as: "gst_details",
+                },
+                {
+                    model: SupplierKyc,
+                    as: "kyc_details",
+                }
+            ],
+            exclude: ["gst_details.supplierSupplierId", "kyc_details.supplierSupplierId"],
         });
         return { success: true, message: "Suppliers fetched successfully", count: suppliers.length, data: suppliers };
     } catch (error) {
@@ -253,5 +251,36 @@ export const rejectSupplierProof = async (req) => {
         return { success: false, error: error.message };
     }
 }
+
+export const getLiveProducts = async (req) => {
+    try {
+        const product = await Product.findAll({
+            where: {
+                approval_status: "approved",
+                lifecycle_status: "active",
+            },
+            include: [
+                {
+                    model: Supplier,
+                    as: "supplier",
+    
+                },
+                {
+                    model: ProductVariant,
+                    as: "variants",
+                },
+                {
+                    model: ProductImage,
+                    as: "images",
+                },
+            ],
+        });
+
+        return { success: true, message: "Products fetched successfully", count: product.length, data: product };
+    } catch (error) {
+        return { success: false, message: error.message };
+    }
+}
+
 
 

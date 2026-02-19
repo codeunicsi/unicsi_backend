@@ -1,4 +1,4 @@
-import { getPendingProducts, getProductById, approveProduct, rejectProduct, modifiedProducts, getAllSupplier, supplierKycVerification, verifySupplier, rejectSupplierProof } from "../utils/adminFunc.js";
+import { getPendingProducts, getProductById, approveProduct, rejectProduct, modifiedProducts, getAllSupplier, supplierKycVerification, verifySupplier, rejectSupplierProof, getLiveProducts } from "../utils/adminFunc.js";
 
 
 
@@ -90,6 +90,16 @@ class SuperAdminController {
         } catch (error) {
             console.error("Error fetching all suppliers:", error);
             res.status(500).json({ error: "Failed to fetch all suppliers" });
+        }
+    };
+
+    getLiveProducts = async (req, res) => {
+        try {
+            const result = await getLiveProducts(req);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching live products:", error);
+            res.status(500).json({ error: "Failed to fetch live products" });
         }
     };
 

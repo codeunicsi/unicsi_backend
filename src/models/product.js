@@ -9,7 +9,7 @@ export const Product = sequelize.define("products", {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
-    },
+    }, 
 
     supplier_id: {
         type: DataTypes.UUID,
