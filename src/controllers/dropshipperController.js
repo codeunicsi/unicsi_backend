@@ -24,6 +24,9 @@ class DropshipperController {
             console.log("shop==>", shop);
 
             const state = crypto.randomBytes(16).toString("hex");
+
+            req.session.state = state;
+
             const installUrl = `https://${shop}/admin/oauth/authorize?client_id=${API_KEY}&scope=${SCOPES}&redirect_uri=${REDIRECT_URI}&state=${state}`;
 
             // For debugging with Postman: send the URL instead of redirecting
@@ -38,37 +41,39 @@ class DropshipperController {
 
 
     // callback shopify
-    callbackShopify = async (req, res) => {
-        try {
-            const { shop, code, state } = req.query;
-            const stateStore = req.session.state;
-            if (!stateStore || stateStore !== state) {
-                return res.status(400).send("Invalid state parameter");
-            }
-            const response = await axios.post(
-                `https://${shop}/admin/oauth/access_token`,
-                {
-                    client_id: API_KEY,
-                    client_secret: API_SECRET,
-                    code,
-                }
-            );
-            const { access_token, scope } = response.data;
-            
-            // Save token and scope to database
-            await ShopifyStore.create({
-                shop_name: shop,
-                access_token,
-                scope,
-            });
+   callbackShopify = async (req, res) => {
+  try {
+    const { shop, code, state } = req.query;
 
-            res.redirect(`${process.env.FRONTEND_URL2}/partner/connect/success`);
+    const stateStore = req.session?.state;
 
-        } catch (error) {
-            console.error("Error connecting to Shopify:", error);
-            res.status(500).send("Failed to connect to Shopify");
-        }
+    if (!stateStore || stateStore !== state) {
+      return res.status(400).send("Invalid state parameter");
     }
+
+    const response = await axios.post(
+      `https://${shop}/admin/oauth/access_token`,
+      {
+        client_id: API_KEY,
+        client_secret: API_SECRET,
+        code,
+      }
+    );
+
+    const { access_token, scope } = response.data;
+
+    await ShopifyStore.create({
+      shop_name: shop,
+      access_token,
+      scope,
+    });
+
+    res.redirect(`${process.env.FRONTEND_URL2}/partner/connect/success`);
+  } catch (error) {
+    console.error("Error connecting to Shopify:", error);
+    res.status(500).send("Failed to connect to Shopify");
+  }
+};
 
 }
 

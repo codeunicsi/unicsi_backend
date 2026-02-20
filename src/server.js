@@ -7,6 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import('../src/config/association.js')
 import cookieParser from "cookie-parser";
+import session from "express-session";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -59,6 +60,15 @@ sequelize
   .sync({ alter: true })
   .then(() => console.log("✅ Models synced with database"))
   .catch((err) => console.error("❌ Error syncing models:", err.message));
+
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    },
+  }));
 
 // Mount routes (handles all /api/auth/... and other endpoints)
 app.use("/api/v1/", routes);
