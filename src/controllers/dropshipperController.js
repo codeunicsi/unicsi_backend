@@ -41,54 +41,53 @@ class DropshipperController {
 
 
   // callback shopify
-  callbackShopify = async (req, res) => {
-    try {
-      const { shop, code, state, hmac, ...rest } = req.query;
+callbackShopify = async (req, res) => {
+  try {
+    const { hmac, signature, ...query } = req.query;
 
-      const stateStore = req.session?.state;
+    const map = Object.keys(query)
+      .sort()
+      .map(key => `${key}=${Array.isArray(query[key]) ? query[key].join(',') : query[key]}`)
+      .join('&');
 
-      if (!stateStore || stateStore !== state) {
-        return res.status(400).send("Invalid state");
-      }
+    const generatedHash = crypto
+      .createHmac("sha256", API_SECRET)
+      .update(map)
+      .digest("hex");
 
-      const message = Object.keys(rest)
-        .sort()
-        .map(key => `${key}=${rest[key]}`)
-        .join("&");
-
-      const generatedHash = crypto
-        .createHmac("sha256", API_SECRET)
-        .update(message)
-        .digest("hex");
-
-      if (generatedHash !== hmac) {
-        return res.status(400).send("HMAC validation failed");
-      }
-
-      const tokenRes = await axios.post(
-        `https://${shop}/admin/oauth/access_token`,
-        {
-          client_id: API_KEY,
-          client_secret: API_SECRET,
-          code,
-        }
-      );
-
-      const { access_token, scope } = tokenRes.data;
-
-      await ShopifyStore.upsert({
-        shop_name: shop,
-        access_token,
-        scope,
-      });
-
-      res.redirect(`${process.env.FRONTEND_URL2}/partner/connect/success`);
-
-    } catch (error) {
-      console.error(error.response?.data || error);
-      res.status(500).send("Shopify connection failed");
+    if (generatedHash !== hmac) {
+      console.log("Generated:", generatedHash);
+      console.log("Shopify:", hmac);
+      console.log("Message:", map);
+      return res.status(400).send("HMAC validation failed");
     }
-  };
+
+    const { shop, code } = query;
+
+    const tokenRes = await axios.post(
+      `https://${shop}/admin/oauth/access_token`,
+      {
+        client_id: API_KEY,
+        client_secret: API_SECRET,
+        code,
+      }
+    );
+
+    const { access_token, scope } = tokenRes.data;
+
+    await ShopifyStore.upsert({
+      shop_name: shop,
+      access_token,
+      scope,
+    });
+
+    res.redirect(`${process.env.FRONTEND_URL2}/partner/connect/success`);
+
+  } catch (error) {
+    console.error(error.response?.data || error);
+    res.status(500).send("Shopify connection failed");
+  }
+};
 
 }
 
