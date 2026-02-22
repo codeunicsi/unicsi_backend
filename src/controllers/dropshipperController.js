@@ -50,7 +50,7 @@ class DropshipperController {
         .map(key => `${key}=${Array.isArray(query[key]) ? query[key].join(',') : query[key]}`)
         .join('&');
 
-      const userId = req.user.userId;
+      // const userId = req.user.userId;
 
       const generatedHash = crypto
         .createHmac("sha256", API_SECRET)
