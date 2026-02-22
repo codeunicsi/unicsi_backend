@@ -41,53 +41,60 @@ class DropshipperController {
 
 
   // callback shopify
-callbackShopify = async (req, res) => {
-  try {
-    const { hmac, signature, ...query } = req.query;
+  callbackShopify = async (req, res) => {
+    try {
+      const { hmac, signature, ...query } = req.query;
 
-    const map = Object.keys(query)
-      .sort()
-      .map(key => `${key}=${Array.isArray(query[key]) ? query[key].join(',') : query[key]}`)
-      .join('&');
+      const map = Object.keys(query)
+        .sort()
+        .map(key => `${key}=${Array.isArray(query[key]) ? query[key].join(',') : query[key]}`)
+        .join('&');
 
-    const generatedHash = crypto
-      .createHmac("sha256", API_SECRET)
-      .update(map)
-      .digest("hex");
+      const userId = req.user.userId;
 
-    if (generatedHash !== hmac) {
-      console.log("Generated:", generatedHash);
-      console.log("Shopify:", hmac);
-      console.log("Message:", map);
-      return res.status(400).send("HMAC validation failed");
-    }
+      const generatedHash = crypto
+        .createHmac("sha256", API_SECRET)
+        .update(map)
+        .digest("hex");
 
-    const { shop, code } = query;
-
-    const tokenRes = await axios.post(
-      `https://${shop}/admin/oauth/access_token`,
-      {
-        client_id: API_KEY,
-        client_secret: API_SECRET,
-        code,
+      if (generatedHash !== hmac) {
+        console.log("Generated:", generatedHash);
+        console.log("Shopify:", hmac);
+        console.log("Message:", map);
+        return res.status(400).send("HMAC validation failed");
       }
-    );
 
-    const { access_token, scope } = tokenRes.data;
+      const { shop, code } = query;
 
-    await ShopifyStore.upsert({
-      shop_name: shop,
-      access_token,
-      scope,
-    });
+      const tokenRes = await axios.post(
+        `https://${shop}/admin/oauth/access_token`,
+        {
+          client_id: API_KEY,
+          client_secret: API_SECRET,
+          code,
+        }
+      );
 
-    res.redirect(`${process.env.FRONTEND_URL2}/partner/connect/success`);
+      const { access_token, scope } = tokenRes.data;
 
-  } catch (error) {
-    console.error(error.response?.data || error);
-    res.status(500).send("Shopify connection failed");
-  }
-};
+      await ShopifyStore.upsert({
+        store_name: shop,
+        store_url: `https://${shop}`,
+        access_token,
+        scope,
+        installed_at: new Date(),
+        is_active: true
+      }, {
+        conflictFields: ['store_name']
+      });
+
+      res.redirect(`${process.env.FRONTEND_URL2}/partner/connect/success`);
+
+    } catch (error) {
+      console.error(error.response?.data || error);
+      res.status(500).send("Shopify connection failed");
+    }
+  };
 
 }
 
