@@ -11,69 +11,84 @@ class DropshipperController {
 
 
 
-    // connect shopify
-    connectShopify = async (req, res) => {
-        try {
-            const { shop } = req.query;
+  // connect shopify
+  connectShopify = async (req, res) => {
+    try {
+      const { shop } = req.query;
 
-            // Optional: validate
-            if (!shop) {
-                return res.status(400).json({ error: "Missing 'shop' query parameter" });
-            }
-
-            console.log("shop==>", shop);
-
-            const state = crypto.randomBytes(16).toString("hex");
-
-            req.session.state = state;
-
-            const installUrl = `https://${shop}/admin/oauth/authorize?client_id=${API_KEY}&scope=${SCOPES}&redirect_uri=${REDIRECT_URI}&state=${state}`;
-
-            // For debugging with Postman: send the URL instead of redirecting
-            // res.redirect(installUrl);
-            res.json({ installUrl });
-        } catch (error) {
-            console.error("Error connecting to Shopify:", error);
-            res.status(500).json({ error: "Failed to connect to Shopify" });
-        }
-    };
-
-
-
-    // callback shopify
-   callbackShopify = async (req, res) => {
-  try {
-    const { shop, code, state } = req.query;
-
-    const stateStore = req.session?.state;
-
-    if (!stateStore || stateStore !== state) {
-      return res.status(400).send("Invalid state parameter");
-    }
-
-    const response = await axios.post(
-      `https://${shop}/admin/oauth/access_token`,
-      {
-        client_id: API_KEY,
-        client_secret: API_SECRET,
-        code,
+      if (!shop || !shop.endsWith(".myshopify.com")) {
+        return res.status(400).json({ error: "Invalid shop domain" });
       }
-    );
 
-    const { access_token, scope } = response.data;
+      const state = crypto.randomBytes(16).toString("hex");
 
-    await ShopifyStore.create({
-      shop_name: shop,
-      access_token,
-      scope,
-    });
+      req.session.state = state;
 
-    res.redirect(`${process.env.FRONTEND_URL2}/partner/connect/success`);
-  } catch (error) {
-    console.error("Error connecting to Shopify:", error);
-    res.status(500).send("Failed to connect to Shopify");
-  }
-};
+      const installUrl = `https://${shop}/admin/oauth/authorize?client_id=${API_KEY}&scope=${encodeURIComponent(
+        SCOPES
+      )}&redirect_uri=${encodeURIComponent(
+        REDIRECT_URI
+      )}&state=${state}`;
+
+      res.json({ installUrl });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to connect Shopify" });
+    }
+  };
+
+
+
+  // callback shopify
+  callbackShopify = async (req, res) => {
+    try {
+      const { shop, code, state, hmac, ...rest } = req.query;
+
+      const stateStore = req.session?.state;
+
+      if (!stateStore || stateStore !== state) {
+        return res.status(400).send("Invalid state");
+      }
+
+      const message = Object.keys(rest)
+        .sort()
+        .map(key => `${key}=${rest[key]}`)
+        .join("&");
+
+      const generatedHash = crypto
+        .createHmac("sha256", API_SECRET)
+        .update(message)
+        .digest("hex");
+
+      if (generatedHash !== hmac) {
+        return res.status(400).send("HMAC validation failed");
+      }
+
+      const tokenRes = await axios.post(
+        `https://${shop}/admin/oauth/access_token`,
+        {
+          client_id: API_KEY,
+          client_secret: API_SECRET,
+          code,
+        }
+      );
+
+      const { access_token, scope } = tokenRes.data;
+
+      await ShopifyStore.upsert({
+        shop_name: shop,
+        access_token,
+        scope,
+      });
+
+      res.redirect(`${process.env.FRONTEND_URL2}/partner/connect/success`);
+
+    } catch (error) {
+      console.error(error.response?.data || error);
+      res.status(500).send("Shopify connection failed");
+    }
+  };
 
 }
 

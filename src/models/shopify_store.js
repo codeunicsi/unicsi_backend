@@ -7,7 +7,7 @@ export const ShopifyStore = sequelize.define("shopify_store", {
         primaryKey: true,
         defaultValue: DataTypes.UUIDV4,
     },
-    shop: {
+    store_name: {
         type: DataTypes.STRING,
         allowNull: false
     },
@@ -27,6 +27,18 @@ export const ShopifyStore = sequelize.define("shopify_store", {
         type: DataTypes.UUID,
         allowNull: false
     },
+    installed_at: {
+        type: DataTypes.DATE,
+        allowNull: true
+    },
+    uninstalled_at: {
+        type: DataTypes.DATE,
+        allowNull: true
+    },
+    is_active: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: true
+    }
 },
     { timestamps: true }
 )
