@@ -5,5 +5,6 @@ import { auth } from "../middlewares/auth.js";
 
 router.get("/shopify/connect", DropshipperController.connectShopify);
 router.get("/shopify/callback", DropshipperController.callbackShopify);
+router.post("/shopify/push-product", DropshipperController.pushProductToShopify);
 
 export default router;

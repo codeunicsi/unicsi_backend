@@ -1,0 +1,33 @@
+import { DataTypes } from "sequelize";
+import sequelize from "../config/database.js";
+
+const StoreProduct = sequelize.define("store_products", {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    store_id: {
+        type: DataTypes.UUID,
+        allowNull: false
+
+    },
+    platform_product_id: {
+        type: DataTypes.UUID,
+        allowNull: false
+    },
+    shopify_product_id: {
+        type: DataTypes.UUID,
+        allowNull: false
+    },
+    status: {
+        type: DataTypes.ENUM("active", "inactive"),
+        allowNull: false,
+        defaultValue: "active"
+    },
+    created_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW
+    }, 
+});

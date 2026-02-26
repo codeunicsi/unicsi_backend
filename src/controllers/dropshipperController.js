@@ -96,6 +96,31 @@ class DropshipperController {
     }
   };
 
+  pushProductToShopify = async (req, res) => {
+    try {
+      const { shop, access_token, productData } = req.body;
+      console.log("shop", shop)
+      console.log("accessToken", access_token)
+
+      const productRes = await axios.post(
+        `https://${shop}/admin/api/2026-01/products.json`,
+        productData,
+        {
+          headers: {
+            "X-Shopify-Access-Token": access_token,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      return res.json(productRes.data);
+
+    } catch (error) {
+      console.error(error.response?.data || error);
+      res.status(500).send("Failed to push product to Shopify");
+    }
+  };
+
 }
 
 export default new DropshipperController();
