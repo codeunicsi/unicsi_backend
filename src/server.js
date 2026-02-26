@@ -40,6 +40,7 @@ app.use(
       process.env.FRONTEND_URL1,
       process.env.FRONTEND_URL2, 
       process.env.FRONTEND_URL3,
+      process.env.FRONTEND_URL4,
 
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
