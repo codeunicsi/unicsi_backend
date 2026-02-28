@@ -1,6 +1,6 @@
 import express from "express";
 const router = express.Router();
-import upload from "../middlewares/uploadMiddleware.js";
+import upload from "../middlewares/upload.js";
 import { auth } from "../middlewares/auth.js";
 
 import supplierController from "../controllers/supplierController.js";

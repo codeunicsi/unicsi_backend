@@ -449,6 +449,7 @@ export const add_products = async (req) => {
     /**
      * Save uploaded images
      */
+    // const imagesPayload = [];
     if (req.files && req.files.length > 0) {
       console.log("req.files ==>", req.files[0]);
       const imagesPayload = req.files.map((file, index) => ({
@@ -470,6 +471,8 @@ export const add_products = async (req) => {
         imagesCount: req.files?.length || 0,
         approval_status,
         createdAt: new Date().toISOString(),
+        variants: createdVariants,
+        // images: imagesPayload,
       },
       message: `Product created successfully with ${createdVariants.length} variant(s)`,
     };

@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/Bitsandgigs/Unicsi_backend#readme",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.998.0",
     "adm-zip": "^0.5.16",
     "axios": "^1.13.5",
     "bcrypt": "^6.0.0",
@@ -33,6 +34,7 @@
     "express-session": "^1.19.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
+    "multer-s3": "^3.0.1",
     "nodemailer": "^7.0.10",
     "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
