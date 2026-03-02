@@ -62,13 +62,13 @@ export const signup = async (req, res) => {
     }
 
     // ✅ Step 1: Check if frontend confirmed OTP verification
-    if(role === "SUPPLIER"){
-      if (!otpVerified) {
-        return res
-          .status(400)
-          .json({ message: "Email not verified or invalid OTP" });
-      }
-    }
+    // if(role === "SUPPLIER"){
+    //   if (!otpVerified) {
+    //     return res
+    //       .status(400)
+    //       .json({ message: "Email not verified or invalid OTP" });
+    //   }
+    // }
 
     // ✅ Step 2: Ensure email not already used
     const existingUser = await User.findOne({ where: { email } });
