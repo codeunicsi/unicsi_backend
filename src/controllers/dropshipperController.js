@@ -41,7 +41,7 @@ class DropshipperController {
   // callback shopify
   callbackShopify = async (req, res) => {
     try {
-      const { hmac, signature, userId, ...query } = req.query;
+      const { hmac, signature, ...query } = req.query;
     
 
       const map = Object.keys(query)
@@ -86,6 +86,8 @@ class DropshipperController {
       }, {
         conflictFields: ['store_name']
       });
+
+      const userId = '7c388fd6-2e3c-46f3-ad00-c571d11765b1';
 
       await User.update({
         shopify_store: `https://${shop}`,
