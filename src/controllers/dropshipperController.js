@@ -14,7 +14,7 @@ class DropshipperController {
   // connect shopify
   connectShopify = async (req, res) => {
     try {
-      const { shop } = req.query;
+      const { shop, userId } = req.query;
 
       if (!shop || !shop.endsWith(".myshopify.com")) {
         return res.status(400).json({ error: "Invalid shop domain" });
@@ -28,7 +28,7 @@ class DropshipperController {
         SCOPES
       )}&redirect_uri=${encodeURIComponent(
         REDIRECT_URI
-      )}&state=${state}`;
+      )}&state=${state}&userId=${userId}`;
 
       res.json({ installUrl });
 
@@ -41,7 +41,8 @@ class DropshipperController {
   // callback shopify
   callbackShopify = async (req, res) => {
     try {
-      const { hmac, signature, ...query } = req.query;
+      const { hmac, signature, userId, ...query } = req.query;
+    
 
       const map = Object.keys(query)
         .sort()
@@ -90,7 +91,7 @@ class DropshipperController {
         shopify_store: `https://${shop}`,
         shopify_access_token: access_token,
       }, {
-        where: { user_id: req.user.userId }
+        where: { user_id: userId }
       });
 
       res.redirect(`${process.env.FRONTEND_URL2}/marketplace/connect/success`);
