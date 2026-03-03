@@ -1,4 +1,4 @@
-import { ShopifyStore, User } from '../models/index.js'
+import { ShopifyStore, User, Product, ProductVariant, ProductImage } from '../models/index.js'
 import crypto from "crypto";
 import axios from "axios";
 
@@ -86,7 +86,7 @@ class DropshipperController {
         }
       );
 
-     
+
 
       const { access_token, scope } = tokenRes.data;
 
@@ -150,6 +150,30 @@ class DropshipperController {
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Failed to get Shopify store" });
+    }
+  };
+
+  getProducts = async (req, res) => {
+    try {
+      const getProducts = await Product.findAll({
+        include: [
+          { model: ProductVariant, as: "variants" },
+          { model: ProductImage, as: "images" }
+        ]
+      })
+      return res.json({
+        success: true,
+        message: "Products fetched successfully",
+        count: getProducts.length,
+        data: getProducts,
+      })
+    } catch (error) {
+      console.error(error.response?.data || error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to get products from Shopify",
+        error: error.message,
+      })
     }
   };
 

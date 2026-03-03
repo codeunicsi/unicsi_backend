@@ -7,5 +7,6 @@ router.get("/shopify/connect", auth, DropshipperController.connectShopify);
 router.get("/shopify/callback", auth, DropshipperController.callbackShopify);
 router.post("/shopify/push-product", auth, DropshipperController.pushProductToShopify);
 router.get("/shopify/get-store", auth, DropshipperController.getShopifyStore);
+router.get("/shopify/get-products", auth, DropshipperController.getProducts);
 
 export default router;
