@@ -1,4 +1,4 @@
-import { ShopifyStore } from '../models/index.js'
+import { ShopifyStore, User } from '../models/index.js'
 import crypto from "crypto";
 import axios from "axios";
 
@@ -37,8 +37,6 @@ class DropshipperController {
       res.status(500).json({ error: "Failed to connect Shopify" });
     }
   };
-
-
 
   // callback shopify
   callbackShopify = async (req, res) => {
@@ -88,7 +86,14 @@ class DropshipperController {
         conflictFields: ['store_name']
       });
 
-      res.redirect(`${process.env.FRONTEND_URL2}/partner/connect/success`);
+      await User.update({
+        shopify_store: `https://${shop}`,
+        shopify_access_token: access_token,
+      }, {
+        where: { user_id: req.user.userId }
+      });
+
+      res.redirect(`${process.env.FRONTEND_URL2}/marketplace/connect/success`);
 
     } catch (error) {
       console.error(error.response?.data || error);
@@ -118,6 +123,18 @@ class DropshipperController {
     } catch (error) {
       console.error(error.response?.data || error);
       res.status(500).send("Failed to push product to Shopify");
+    }
+  };
+
+  // get shopify store
+  getShopifyStore = async (req, res) => {
+    try {
+      const { shop } = req.query;
+      const shopifyStore = await ShopifyStore.findOne({ where: { store_name: shop } });
+      return res.json(shopifyStore);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to get Shopify store" });
     }
   };
 
