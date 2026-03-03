@@ -454,7 +454,7 @@ export const add_products = async (req) => {
       console.log("req.files ==>", req.files[0]);
       const imagesPayload = req.files.map((file, index) => ({
         product_id: productId,
-        image_url: `${req.protocol}://${req.get("host")}/uploads/images/${file.filename}`,
+        image_url: `https://${req.get("host")}/uploads/images/${file.filename}`,
         sort_order: index,
       }));
 
