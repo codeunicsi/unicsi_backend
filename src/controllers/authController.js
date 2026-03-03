@@ -175,15 +175,19 @@ export const login = async (req, res) => {
     //   path: "/"
     // };
 
-  const isProd = process.env.NODE_ENV === "production";
+    const isProd = process.env.NODE_ENV === "production";
 
     const cookieOptions = {
       httpOnly: true,
-      secure: isProd,                 // only true in https
+      secure: isProd,                 // true only in HTTPS
       sameSite: isProd ? "none" : "lax",
-      domain: isProd ? ".unicsi.com" : "localhost",
       path: "/",
     };
+
+    // Only set domain in production
+    if (isProd) {
+      cookieOptions.domain = ".unicsi.com";
+    }
 
 
     // 🍪 Set access_token cookie
@@ -194,7 +198,7 @@ export const login = async (req, res) => {
     );
 
     // 🍪 Set refresh_token cookie
-    res.cookie("refresh_token", refreshToken, cookieOptions, 
+    res.cookie("refresh_token", refreshToken, cookieOptions,
       {
         maxAge: 7 * 24 * 60 * 60 * 1000
       }
@@ -206,7 +210,7 @@ export const login = async (req, res) => {
         maxAge: 7 * 24 * 60 * 60 * 1000
       }
     );
-    
+
     return res.status(200).json({
       success: true,
       message: "Login successful",

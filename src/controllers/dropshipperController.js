@@ -14,21 +14,27 @@ class DropshipperController {
   // connect shopify
   connectShopify = async (req, res) => {
     try {
-      const { shop, userId } = req.query;
+      const { shop } = req.query;
 
       if (!shop || !shop.endsWith(".myshopify.com")) {
         return res.status(400).json({ error: "Invalid shop domain" });
       }
 
-      const state = crypto.randomBytes(16).toString("hex");
+      console.log("req.user==>26", req.user)
 
-      req.session.state = state;
+      // Create secure state payload
+      const statePayload = {
+        userId: req.user.userId,
+        nonce: crypto.randomBytes(8).toString("hex"),
+      };
+
+      const state = Buffer.from(JSON.stringify(statePayload)).toString("base64");
 
       const installUrl = `https://${shop}/admin/oauth/authorize?client_id=${API_KEY}&scope=${encodeURIComponent(
         SCOPES
       )}&redirect_uri=${encodeURIComponent(
         REDIRECT_URI
-      )}&state=${state}&userId=${userId}`;
+      )}&state=${state}`;
 
       res.json({ installUrl });
 
@@ -42,7 +48,7 @@ class DropshipperController {
   callbackShopify = async (req, res) => {
     try {
       const { hmac, signature, ...query } = req.query;
-    
+
 
       const map = Object.keys(query)
         .sort()
@@ -63,7 +69,13 @@ class DropshipperController {
         return res.status(400).send("HMAC validation failed");
       }
 
-      const { shop, code } = query;
+      const { shop, code, state } = query;
+
+      const decodedState = JSON.parse(
+        Buffer.from(state, "base64").toString("utf8")
+      );
+
+      const userId = decodedState.userId;
 
       const tokenRes = await axios.post(
         `https://${shop}/admin/oauth/access_token`,
@@ -73,6 +85,8 @@ class DropshipperController {
           code,
         }
       );
+
+     
 
       const { access_token, scope } = tokenRes.data;
 
@@ -86,8 +100,6 @@ class DropshipperController {
       }, {
         conflictFields: ['store_name']
       });
-
-      const userId = '7c388fd6-2e3c-46f3-ad00-c571d11765b1';
 
       await User.update({
         shopify_store: `https://${shop}`,

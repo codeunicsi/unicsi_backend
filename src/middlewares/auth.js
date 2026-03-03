@@ -16,6 +16,8 @@ export const auth = (req, res, next) => {
     token = req.cookies.access_token;
   }
 
+  console.log("token", req.cookies?.access_token);
+
   if (!token) {
     return res.status(401).json({ message: "No token provided" });
   }
