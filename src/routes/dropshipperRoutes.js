@@ -2,7 +2,7 @@ import express from "express";
 const router = express.Router();
 import DropshipperController from "../controllers/dropshipperController.js";
 import { auth } from "../middlewares/auth.js";
-import { verifyShopifyWebhook } from "../middlewares/shopifyWebhookVerify.js";
+import verifyShopifyWebhook from "../middlewares/shopifyWebhookVerify.js";
 
 router.get("/shopify/connect", auth, DropshipperController.connectShopify);
 router.get("/shopify/callback", auth, DropshipperController.callbackShopify);

@@ -1,14 +1,36 @@
+name = "Unicsi Dropshipping"
+client_id = "026fb6ba43ad6d9af92ddd6e5302271f"
+application_url = "https://unicsi.com"
+embedded = true
+handle = "unicsi-dropshipping"
+
+[access_scopes]
+scopes = "read_customers,write_fulfillments,write_inventory,read_inventory,read_orders,write_orders,read_products,write_products"
+
+[access.admin]
+direct_api_mode = "online"
+
+[auth]
+redirect_urls = [
+  "https://apis.unicsi.com/api/v1/dropshipper/shopify/callback"
+]
+
 [webhooks]
 api_version = "2026-01"
 
 [[webhooks.subscriptions]]
-topics = ["customers/data_request"]
-uri = "https://apis.unicsi.com/api/v1/dropshipper/shopfiy/webhooks/customers/data_request"
+compliance_topics = [
+  "customers/data_request",
+  "customers/redact",
+  "shop/redact"
+]
+
+uri = "https://apis.unicsi.com/api/v1/dropshipper/shopify/webhooks"
 
 [[webhooks.subscriptions]]
-topics = ["customers/redact"]
-uri = "https://apis.unicsi.com/api/v1/dropshipper/shopify/webhooks/customers/redact"
+topics = [ "app/uninstalled" ]
 
-[[webhooks.subscriptions]]
-topics = ["shop/redact"]
-uri = "https://apis.unicsi.com/api/v1/dropshipper/shopify/webhooks/shop/redact"
+uri = "https://apis.unicsi.com/api/v1/dropshipper/shopify/webhooks/app/uninstalled"
+
+[build]
+automatically_update_urls_on_dev = false

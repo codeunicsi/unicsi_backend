@@ -55,6 +55,8 @@ app.use(
   "/api/v1/dropshipper/shopify/webhooks",
   express.raw({ type: "application/json" })
 );
+
+app.use(express.json());
 app.use(cookieParser());
 
 // Connect to PostgreSQL Database
