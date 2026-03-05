@@ -177,6 +177,21 @@ class DropshipperController {
     }
   };
 
+  webhookCustomersDataRequest = async (req, res) => {
+    console.log("customers/data_request webhook received");
+    res.status(200).send("OK");
+  };
+
+  webhookCustomersRedact = async (req, res) => {
+    console.log("customers/redact webhook received");
+    res.status(200).send("OK");
+  };
+
+  webhookShopRedact = async (req, res) => {
+    console.log("shop/redact webhook received");
+    res.status(200).send("OK");
+  };
+
 }
 
 export default new DropshipperController();

@@ -1,0 +1,14 @@
+[webhooks]
+api_version = "2026-01"
+
+[[webhooks.subscriptions]]
+topics = ["customers/data_request"]
+uri = "https://apis.unicsi.com/api/v1/dropshipper/shopfiy/webhooks/customers/data_request"
+
+[[webhooks.subscriptions]]
+topics = ["customers/redact"]
+uri = "https://apis.unicsi.com/api/v1/dropshipper/shopify/webhooks/customers/redact"
+
+[[webhooks.subscriptions]]
+topics = ["shop/redact"]
+uri = "https://apis.unicsi.com/api/v1/dropshipper/shopify/webhooks/shop/redact"
