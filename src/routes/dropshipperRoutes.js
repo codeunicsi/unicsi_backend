@@ -10,8 +10,8 @@ router.get("/shopify/get-store", auth, DropshipperController.getShopifyStore);
 router.get("/shopify/get-products", auth, DropshipperController.getProducts);
 
 // shopify webhooks
-router.post("/shopify/webhooks/customers/data_request", auth, DropshipperController.webhookCustomersDataRequest);
-router.post("/shopify/webhooks/customers/redact", auth, DropshipperController.webhookCustomersRedact);
-router.post("/shopify/webhooks/shop/redact", auth, DropshipperController.webhookShopRedact);
+router.post("/shopify/webhooks/customers/data_request", DropshipperController.webhookCustomersDataRequest);
+router.post("/shopify/webhooks/customers/redact", DropshipperController.webhookCustomersRedact);
+router.post("/shopify/webhooks/shop/redact", DropshipperController.webhookShopRedact);
 
 export default router;
