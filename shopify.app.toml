@@ -1,14 +1,11 @@
 name = "Unicsi Dropshipping"
-client_id = "026fb6ba43ad6d9af92ddd6e5302271f"
+client_id = "YOUR_CLIENT_ID"
 application_url = "https://unicsi.com"
 embedded = true
 handle = "unicsi-dropshipping"
 
 [access_scopes]
 scopes = "read_customers,write_fulfillments,write_inventory,read_inventory,read_orders,write_orders,read_products,write_products"
-
-[access.admin]
-direct_api_mode = "online"
 
 [auth]
 redirect_urls = [
@@ -24,13 +21,4 @@ compliance_topics = [
   "customers/redact",
   "shop/redact"
 ]
-
 uri = "https://apis.unicsi.com/api/v1/dropshipper/shopify/webhooks"
-
-[[webhooks.subscriptions]]
-topics = [ "app/uninstalled" ]
-
-uri = "https://apis.unicsi.com/api/v1/dropshipper/shopify/webhooks/app/uninstalled"
-
-[build]
-automatically_update_urls_on_dev = false

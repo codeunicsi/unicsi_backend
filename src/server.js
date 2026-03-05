@@ -51,11 +51,6 @@ app.use(
 
 // Enable JSON parsing for incoming requests
 // app.use(express.json());
-app.use(
-  "/api/v1/dropshipper/shopify/webhooks",
-  express.raw({ type: "application/json" })
-);
-
 app.use(express.json());
 app.use(cookieParser());
 
