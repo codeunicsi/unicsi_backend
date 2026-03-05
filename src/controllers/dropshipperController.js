@@ -179,6 +179,7 @@ class DropshipperController {
 
   webhookCustomersDataRequest = async (req, res) => {
     console.log("customers/data_request webhook received");
+    console.log(req.body);
     res.status(200).send("OK");
   };
 
