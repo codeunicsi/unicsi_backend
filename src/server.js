@@ -74,6 +74,7 @@ app.use(session({
   }));
 
 // Mount routes (handles all /api/auth/... and other endpoints)
+
 app.use("/api/v1/", routes);
 // app.use("/api/v1", uploadRoutes);
 app.use("/uploads", express.static("uploads"));

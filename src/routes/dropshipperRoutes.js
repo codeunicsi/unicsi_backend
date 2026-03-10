@@ -11,11 +11,7 @@ router.get("/shopify/get-store", auth, DropshipperController.getShopifyStore);
 router.get("/shopify/get-products", auth, DropshipperController.getProducts);
 
 // shopify webhooks
-router.post(
-  "/shopify/webhooks",
-  express.raw({ type: "application/json" }),
-  verifyShopifyWebhook,
-  async (req, res) => {
+router.post("/shopify/webhooks", verifyShopifyWebhook, async (req, res) => {
     const topic = req.headers["x-shopify-topic"]
     const shop = req.headers["x-shopify-shop-domain"]
 
