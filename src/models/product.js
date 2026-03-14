@@ -70,6 +70,16 @@ export const Product = sequelize.define("products", {
     defaultValue: DataTypes.NOW,
   },
 
+  rejection_reason: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+
+  rejected_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+
 }, {
     timestamps: true,
     underscored: true,
