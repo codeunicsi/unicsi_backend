@@ -1,4 +1,19 @@
-import { Supplier, Product, ProductVariant, ProductImage, Warehouse, Inventory, SupplierPricing, Reseller, Order, NdrCase, supplier_gst_details,  SupplierKyc } from "../models/index.js";
+import {
+  Supplier,
+  Product,
+  ProductVariant,
+  ProductImage,
+  Warehouse,
+  Inventory,
+  SupplierPricing,
+  Reseller,
+  Order,
+  NdrCase,
+  supplier_gst_details,
+  SupplierKyc,
+  reseller_bank_details,
+  reseller_gst_details,
+} from "../models/index.js";
 import { User } from "../models/User.js";
 
 /* ===========================
@@ -17,32 +32,30 @@ import { User } from "../models/User.js";
 // SupplierToken.belongsTo(Supplier);
 
 // Supplier → Product
-Supplier.hasMany(Product, { foreignKey: "supplier_id" },
-    { as: "products" }
-);
+Supplier.hasMany(Product, { foreignKey: "supplier_id" }, { as: "products" });
 Product.belongsTo(Supplier, {
-    foreignKey: "supplier_id",
-    as: "supplier",
+  foreignKey: "supplier_id",
+  as: "supplier",
 });
 
 // Product → Variant
 Product.hasMany(ProductVariant, {
-    foreignKey: "product_id",
-    as: "variants",
+  foreignKey: "product_id",
+  as: "variants",
 });
 ProductVariant.belongsTo(Product, {
-    foreignKey: "product_id",
-    as: "product",
+  foreignKey: "product_id",
+  as: "product",
 });
 
 // Variant → Images
 Product.hasMany(ProductImage, {
-    foreignKey: "product_id",
-    as: "images",
+  foreignKey: "product_id",
+  as: "images",
 });
 ProductImage.belongsTo(Product, {
-    foreignKey: "product_id",
-    as: "product",
+  foreignKey: "product_id",
+  as: "product",
 });
 
 // Supplier → Warehouse
@@ -51,42 +64,57 @@ Warehouse.belongsTo(Supplier, { foreignKey: "supplier_id" });
 
 // Variant → Inventory
 ProductVariant.hasMany(Inventory, {
-    foreignKey: "variant_id",
-    as: "inventory",
+  foreignKey: "variant_id",
+  as: "inventory",
 });
 Inventory.belongsTo(ProductVariant, {
-    foreignKey: "variant_id",
+  foreignKey: "variant_id",
 });
 
 // Variant → Pricing
 ProductVariant.hasOne(SupplierPricing, {
-    foreignKey: "variant_id",
-    as: "pricing",
+  foreignKey: "variant_id",
+  as: "pricing",
 });
 SupplierPricing.belongsTo(ProductVariant, {
-    foreignKey: "variant_id",
+  foreignKey: "variant_id",
 });
-
 
 Reseller.hasMany(Order, { foreignKey: "reseller_id" });
 Order.belongsTo(Reseller);
 
+Supplier.hasOne(supplier_gst_details, {
+  foreignKey: "supplier_id",
+  as: "gst_details",
+});
 
-Supplier.hasOne(supplier_gst_details, { foreignKey: "supplier_id",
-    as: "gst_details",
- });
-
- Supplier.hasOne(SupplierKyc, {
+Supplier.hasOne(SupplierKyc, {
   foreignKey: "supplier_id",
   as: "kyc_details",
-})
+});
 
 supplier_gst_details.belongsTo(Supplier);
 SupplierKyc.belongsTo(Supplier);
 
+User.hasOne(reseller_bank_details, {
+  foreignKey: "user_id",
+  as: "bank_details",
+});
+
+reseller_bank_details.belongsTo(User, {
+  foreignKey: "user_id",
+  as: "user",
+});
+
+User.hasOne(reseller_gst_details, {
+  foreignKey: "user_id",
+  as: "gst_details",
+});
+
+reseller_gst_details.belongsTo(User, {
+  foreignKey: "user_id",
+  as: "user",
+});
+
 // User.hasOne(Supplier, { foreignKey: "user_id" });
 // Supplier.belongsTo(User, { foreignKey: "user_id" });
-
-
-
-

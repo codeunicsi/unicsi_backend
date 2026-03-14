@@ -17,6 +17,8 @@ import { Order } from "./Order.js";
 import { OrderStatusHistory } from "./order_status_history.js";
 import { supplier_bank_details } from "./supplier_bank_details.js";
 import { supplier_gst_details } from "./supplier_gst_details.js";
+import { reseller_bank_details } from "./reseller_bank_details.js";
+import { reseller_gst_details } from "./reseller_gst_details.js";
 import { ShopifyStore } from "./shopify_store.js";
 import { User } from "./User.js";
 
@@ -40,6 +42,8 @@ export {
     OrderStatusHistory,
     supplier_bank_details,
     supplier_gst_details,
+    reseller_bank_details,
+    reseller_gst_details,
     ShopifyStore,
     User
 }
