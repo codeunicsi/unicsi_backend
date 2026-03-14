@@ -8,7 +8,7 @@ import { fileURLToPath } from "url";
 import('../src/config/association.js')
 import cookieParser from "cookie-parser";
 import session from "express-session";
-import uploadRoutes from "./routes/upload.js";
+// import uploadRoutes from "./routes/upload.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -77,7 +77,7 @@ app.use(session({
 
 app.use("/api/v1/", routes);
 // app.use("/api/v1", uploadRoutes);
-app.use("/uploads", express.static("uploads"));
+// app.use("/uploads", express.static("uploads"));
 
 // Basic test route
 app.get("/health", (req, res) => {
