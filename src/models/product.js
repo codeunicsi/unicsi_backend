@@ -50,10 +50,10 @@ export const Product = sequelize.define("products", {
   // 🔹 Marketplace visibility (SYSTEM)
   lifecycle_status: {
     type: DataTypes.ENUM(
-      "inactive",
-      "active",
-      "paused",
-      "archived"
+      "inactive",  // not live
+      "active",    // live
+      "paused",    // temp disabled
+      "archived"   // permanently removed
     ),
     defaultValue: "inactive",
   },
