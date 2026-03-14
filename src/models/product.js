@@ -1,59 +1,71 @@
-
-
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
 
-
 export const Product = sequelize.define("products", {
-    product_id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
-        primaryKey: true,
-    }, 
+  product_id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+  },
 
-    supplier_id: {
-        type: DataTypes.UUID,
-        allowNull: false,
-    },
+  supplier_id: {
+    type: DataTypes.UUID,
+    allowNull: false,
+  },
 
-    title: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
+  title: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
 
-    description: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-    },
+  handle: {
+    type: DataTypes.STRING,
+    unique: true,
+  },
 
-    category_id: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-    },
+  description: {
+    type: DataTypes.TEXT,
+  },
 
-    brand: {
-        type: DataTypes.STRING,
-        allowNull: true,
-    },
+  brand: {
+    type: DataTypes.STRING,
+  },
 
- // 🔹 Approval workflow (ADMIN)
+  category_id: {
+    type: DataTypes.INTEGER,
+  },
+
+  tags: {
+    type: DataTypes.STRING,
+  },
+
+  product_type: {
+    type: DataTypes.STRING,
+  },
+
+  // Shopify sync fields
+  shopify_product_id: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+
+  // 🔹 Approval workflow
   approval_status: {
     type: DataTypes.ENUM(
-      "draft",     // supplier editing
-      "submitted", // sent for admin review
-      "approved",  // admin approved
-      "rejected"   // admin rejected
+      "draft",
+      "submitted",
+      "approved",
+      "rejected"
     ),
     defaultValue: "draft",
   },
 
-  // 🔹 Marketplace visibility (SYSTEM)
   lifecycle_status: {
     type: DataTypes.ENUM(
-      "inactive",  // not live
-      "active",    // live
-      "paused",    // temp disabled
-      "archived"   // permanently removed
+      "inactive",
+      "active",
+      "paused",
+      "archived"
     ),
     defaultValue: "inactive",
   },
@@ -61,16 +73,14 @@ export const Product = sequelize.define("products", {
   approved_by: {
     type: DataTypes.UUID,
     allowNull: true,
-    defaultValue: DataTypes.UUIDV4,
   },
 
   approved_at: {
     type: DataTypes.DATE,
     allowNull: true,
-    defaultValue: DataTypes.NOW,
-  },
+  }
 
 }, {
-    timestamps: true,
-    underscored: true,
+  timestamps: true,
+  underscored: true,
 });
