@@ -19,6 +19,8 @@ import { supplier_bank_details } from "./supplier_bank_details.js";
 import { supplier_gst_details } from "./supplier_gst_details.js";
 import { ShopifyStore } from "./shopify_store.js";
 import { User } from "./User.js";
+import { ProductOption } from './product_options.js'
+import { ProductOptionValue } from './product_option_values.js'
 
 export {
     Supplier,
@@ -41,5 +43,7 @@ export {
     supplier_bank_details,
     supplier_gst_details,
     ShopifyStore,
-    User
+    User,
+    ProductOption,
+    ProductOptionValue
 }
