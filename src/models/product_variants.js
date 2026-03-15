@@ -1,8 +1,5 @@
-
-
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
-import { Product } from "./product.js";
 
 export const ProductVariant = sequelize.define("product_variants", {
   variant_id: {
@@ -14,10 +11,6 @@ export const ProductVariant = sequelize.define("product_variants", {
   product_id: {
     type: DataTypes.UUID,
     allowNull: false,
-    references: {
-      model: Product,
-      key: "product_id",
-    },
   },
 
   sku: {
@@ -26,47 +19,54 @@ export const ProductVariant = sequelize.define("product_variants", {
     unique: true,
   },
 
-  variant_name: {
+  title: {
     type: DataTypes.STRING,
-    allowNull: false,
   },
 
-  variant_price: {
+  price: {
     type: DataTypes.DECIMAL,
     allowNull: false,
   },
 
-  variant_stock: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
+  compare_at_price: {
+    type: DataTypes.DECIMAL,
   },
 
-  attributes: {
-    type: DataTypes.JSONB,
-    allowNull: false,
-    // { size: "M", color: "Black" }
+  cost_price: {
+    type: DataTypes.DECIMAL,
+  },
+
+  inventory_quantity: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+
+  inventory_management: {
+    type: DataTypes.STRING,
+    defaultValue: "shopify",
   },
 
   weight_grams: {
     type: DataTypes.INTEGER,
-    allowNull: false,
   },
 
-  dimensions_cm: {
-    type: DataTypes.JSONB,
-    allowNull: true,
-    // { l: 10, w: 5, h: 3 }
-  },
+  option1: DataTypes.STRING,
+  option2: DataTypes.STRING,
+  option3: DataTypes.STRING,
 
-  hsn_code: {
+  shopify_variant_id: {
     type: DataTypes.STRING,
-    allowNull: true,
+  },
+
+  attributes: {
+    type: DataTypes.JSONB,
   },
 
   is_active: {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
   },
+
 }, {
   timestamps: true,
   underscored: true,

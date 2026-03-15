@@ -1,8 +1,5 @@
-
-
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
-import { Product } from "./product.js";
 
 export const ProductImage = sequelize.define("product_images", {
   id: {
@@ -14,10 +11,11 @@ export const ProductImage = sequelize.define("product_images", {
   product_id: {
     type: DataTypes.UUID,
     allowNull: false,
-    references: {
-      model: Product,
-      key: "product_id",
-    },
+  },
+
+  variant_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
   },
 
   image_url: {
@@ -25,10 +23,19 @@ export const ProductImage = sequelize.define("product_images", {
     allowNull: false,
   },
 
+  shopify_image_id: {
+    type: DataTypes.STRING,
+  },
+
+  alt_text: {
+    type: DataTypes.STRING,
+  },
+
   sort_order: {
     type: DataTypes.INTEGER,
     defaultValue: 0,
   },
+
 }, {
   timestamps: true,
   underscored: true,
