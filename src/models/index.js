@@ -19,8 +19,14 @@ import { supplier_bank_details } from "./supplier_bank_details.js";
 import { supplier_gst_details } from "./supplier_gst_details.js";
 import { ShopifyStore } from "./shopify_store.js";
 import { User } from "./User.js";
+import { CourierPartner } from "./courier_partners.js";
+import { CourierServiceability } from "./courier_serviceability.js";
+import { CourierRateCard } from "./courier_rate_cards.js";
+import { CodSettings } from "./cod_settings.js";
+import { AwbPool } from "./awb_pool.js";
 import { ProductOption } from './product_options.js'
 import { ProductOptionValue } from './product_option_values.js'
+
 
 export {
     Supplier,
@@ -44,6 +50,11 @@ export {
     supplier_gst_details,
     ShopifyStore,
     User,
+    CourierPartner,
+    CourierServiceability,
+    CourierRateCard,
+    CodSettings,
+    AwbPool,
     ProductOption,
     ProductOptionValue
 }

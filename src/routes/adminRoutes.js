@@ -1,6 +1,7 @@
 import express from "express";
 const router = express.Router();
 import SuperAdminController from "../controllers/superAdminController.js";
+import logisticsRoutes from "./logisticsRoutes.js";
 
 router.get("/products/get-pending-products", SuperAdminController.getPendingProducts);
 router.get("/products/pending/stats", SuperAdminController.getPendingStats);
@@ -18,6 +19,7 @@ router.put("/products/:product_id/status", SuperAdminController.updateLiveProduc
 router.put("/products/:product_id/modified/:variant_id", SuperAdminController.modifiedProducts);
 
 
+
 // get all supplier
 router.get("/get-all-suppliers", SuperAdminController.getAllSupplier);
 
@@ -29,5 +31,7 @@ router.post("/supplier-verify", SuperAdminController.verifySupplier);
 
 // supplier reject
 router.post("/supplier/kyc/reject", SuperAdminController.rejectSupplierProof);
+
+router.use("/logistics", logisticsRoutes);
 
 export default router;

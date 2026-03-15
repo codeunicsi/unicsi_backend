@@ -1,4 +1,4 @@
-import { Supplier, Product, ProductVariant, ProductImage, Warehouse, Inventory, SupplierPricing, Reseller, Order, NdrCase, supplier_gst_details,  SupplierKyc } from "../models/index.js";
+import { Supplier, Product, ProductVariant, ProductImage, Warehouse, Inventory, SupplierPricing, Reseller, Order, NdrCase, supplier_gst_details, SupplierKyc, CourierPartner, CourierServiceability, CourierRateCard, AwbPool } from "../models/index.js";
 import { User } from "../models/User.js";
 
 /* ===========================
@@ -86,6 +86,15 @@ SupplierKyc.belongsTo(Supplier);
 
 // User.hasOne(Supplier, { foreignKey: "user_id" });
 // Supplier.belongsTo(User, { foreignKey: "user_id" });
+
+CourierPartner.hasMany(CourierServiceability, { foreignKey: "courier_id", as: "serviceability" });
+CourierServiceability.belongsTo(CourierPartner, { foreignKey: "courier_id", as: "courier" });
+
+CourierPartner.hasMany(CourierRateCard, { foreignKey: "courier_id", as: "rate_cards" });
+CourierRateCard.belongsTo(CourierPartner, { foreignKey: "courier_id", as: "courier" });
+
+CourierPartner.hasMany(AwbPool, { foreignKey: "courier_id", as: "awb_pool" });
+AwbPool.belongsTo(CourierPartner, { foreignKey: "courier_id", as: "courier" });
 
 
 
