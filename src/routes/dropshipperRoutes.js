@@ -1,7 +1,7 @@
 import express from "express";
 const router = express.Router();
 import DropshipperController from "../controllers/dropshipperController.js";
-import { auth } from "../middlewares/auth.js";
+import { auth, requireRole } from "../middlewares/auth.js";
 import { verifyShopifyWebhook } from "../middlewares/shopifyWebhookVerify.js";
 import upload from "../middlewares/uploadMiddleware.js";
 import {
@@ -9,12 +9,21 @@ import {
   profileUpdateRules,
   bankDetailsRules,
   gstDetailsRules,
+  validateWithJoi,
+  bulkOrderSchema,
+  bulkOrderPaymentProofSchema,
 } from "../utils/constant.js";
 
-router.get("/profile/personalDetails", auth, DropshipperController.getProfile);
+router.get(
+  "/profile/personalDetails",
+  auth,
+  requireRole("RESELLER"),
+  DropshipperController.getProfile,
+);
 router.put(
   "/profile/personalDetails",
   auth,
+  requireRole("RESELLER"),
   validate(profileUpdateRules),
   DropshipperController.updateProfile,
 );
@@ -22,11 +31,13 @@ router.put(
 router.get(
   "/stores/bankAccountDetails",
   auth,
+  requireRole("RESELLER"),
   DropshipperController.getBankDetails,
 );
 router.post(
   "/stores/bankAccountDetails",
   auth,
+  requireRole("RESELLER"),
   upload.fields([{ name: "bankDetailProof", maxCount: 1 }]),
   validate(bankDetailsRules),
   DropshipperController.saveBankDetails,
@@ -34,15 +45,22 @@ router.post(
 router.put(
   "/stores/bankAccountDetails",
   auth,
+  requireRole("RESELLER"),
   upload.fields([{ name: "bankDetailProof", maxCount: 1 }]),
   validate(bankDetailsRules),
   DropshipperController.saveBankDetails,
 );
 
-router.get("/stores/gstDetails", auth, DropshipperController.getGstDetails);
+router.get(
+  "/stores/gstDetails",
+  auth,
+  requireRole("RESELLER"),
+  DropshipperController.getGstDetails,
+);
 router.post(
   "/stores/gstDetails",
   auth,
+  requireRole("RESELLER"),
   upload.fields([
     { name: "gstCertificate", maxCount: 1 },
     { name: "panCardNumberImage", maxCount: 1 },
@@ -53,6 +71,7 @@ router.post(
 router.put(
   "/stores/gstDetails",
   auth,
+  requireRole("RESELLER"),
   upload.fields([
     { name: "gstCertificate", maxCount: 1 },
     { name: "panCardNumberImage", maxCount: 1 },
@@ -61,15 +80,57 @@ router.put(
   DropshipperController.saveGstDetails,
 );
 
-router.get("/shopify/connect", auth, DropshipperController.connectShopify);
-router.get("/shopify/callback", auth, DropshipperController.callbackShopify);
+router.get(
+  "/shopify/connect",
+  auth,
+  requireRole("RESELLER"),
+  DropshipperController.connectShopify,
+);
+router.get(
+  "/shopify/callback",
+  auth,
+  requireRole("RESELLER"),
+  DropshipperController.callbackShopify,
+);
 router.post(
   "/shopify/push-product",
   auth,
+  requireRole("RESELLER"),
   DropshipperController.pushProductToShopify,
 );
-router.get("/shopify/get-store", auth, DropshipperController.getShopifyStore);
-router.get("/shopify/get-products", auth, DropshipperController.getProducts);
+router.get(
+  "/shopify/get-store",
+  auth,
+  requireRole("RESELLER"),
+  DropshipperController.getShopifyStore,
+);
+router.get(
+  "/shopify/get-products",
+  auth,
+  requireRole("RESELLER"),
+  DropshipperController.getProducts,
+);
+
+router.post(
+  "/bulk/orders",
+  auth,
+  validateWithJoi(bulkOrderSchema),
+  DropshipperController.createBulkOrder,
+);
+
+router.get(
+  "/bulk/orders/bank-details/:productId",
+  auth,
+  DropshipperController.getBulkOrderBankDetails,
+);
+
+router.post(
+  "/bulk/orders/:orderId/payment-proof",
+  auth,
+  upload.fields([{ name: "paymentScreenshot", maxCount: 1 }]),
+  validateWithJoi(bulkOrderPaymentProofSchema),
+  DropshipperController.submitBulkOrderPaymentProof,
+);
 
 // shopify webhooks
 router.post("/shopify/webhooks", verifyShopifyWebhook, async (req, res) => {

@@ -1,3 +1,5 @@
+import Joi from "joi";
+
 export const isEmailOrPhoneNumber = (emailOrPhoneNumber) => {
   const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
   const phonePattern = /^[0-9]{10}$/;
@@ -218,3 +220,88 @@ export const gstDetailsRules = [
   { field: "gstNumber", validator: validateGSTNumber, required: true },
   { field: "panCardNumber", validator: validatePAN, required: true },
 ];
+
+export const validateWithJoi = (schema) => (req, res, next) => {
+  const { error, value } = schema.validate(req.body, {
+    abortEarly: false,
+    stripUnknown: true,
+  });
+
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      errors: error.details.map((detail) => ({
+        field: detail.path.join("."),
+        message: detail.message,
+      })),
+    });
+  }
+
+  req.body = value;
+  next();
+};
+
+export const bulkOrderSchema = Joi.object({
+  productId: Joi.string().uuid().required(),
+  quantity: Joi.number().integer().min(1).required(),
+  gstRate: Joi.number().min(0).max(1).optional(),
+  ssnCode: Joi.string().trim().max(50).optional(),
+  serviceAccountingCode: Joi.string().trim().max(50).optional(),
+  userBusinessDetails: Joi.object({
+    businessName: Joi.string().trim().min(2).max(120).required(),
+    gstNumber: Joi.string().trim().optional(),
+    contactName: Joi.string().trim().min(2).max(100).optional(),
+    contactPhone: Joi.string().trim().optional(),
+    billingAddress: Joi.string().trim().max(500).optional(),
+    notes: Joi.string().trim().max(500).optional(),
+  }).optional(),
+  checkoutDetails: Joi.object({
+    customerName: Joi.string().trim().min(2).max(120).required(),
+    customerPhone: Joi.string().trim().min(10).max(20).required(),
+    deliveryAddress: Joi.string().trim().min(5).max(500).required(),
+    notes: Joi.string().trim().max(500).optional(),
+  }).optional(),
+}).or("userBusinessDetails", "checkoutDetails");
+
+export const bulkOrderPaymentProofSchema = Joi.object({
+  transactionReference: Joi.string().trim().max(120).required(),
+  paymentMode: Joi.string().valid("upi", "bank_transfer").required(),
+  amount: Joi.number().positive().optional(),
+  notes: Joi.string().trim().max(500).optional(),
+});
+
+export const bulkOrderPaymentRejectSchema = Joi.object({
+  reason: Joi.string().trim().min(3).max(500).required(),
+});
+
+export const bulkOrderConfigSchema = Joi.object({
+  minOrderQty: Joi.number().integer().min(1).required(),
+  supplierBulkPriceRefreshDays: Joi.number().integer().min(1).required(),
+  defaultGstRate: Joi.number().min(0).max(1).required(),
+  defaultShippingCharge: Joi.number().min(0).required(),
+  defaultMarginPerPiece: Joi.number().min(0).required(),
+  allowRoles: Joi.array()
+    .items(Joi.string().valid("CUSTOMER", "RESELLER", "SUPPLIER"))
+    .min(1)
+    .required(),
+  statusFlow: Joi.object({
+    pendingPayment: Joi.string().trim().required(),
+    confirmed: Joi.string().trim().required(),
+    shipped: Joi.string().trim().required(),
+    delivered: Joi.string().trim().required(),
+  }).required(),
+  paymentAccount: Joi.object({
+    accountHolderName: Joi.string().trim().min(2).max(150).required(),
+    accountNumber: Joi.string().trim().min(6).max(40).required(),
+    ifscCode: Joi.string().trim().min(4).max(20).required(),
+    bankName: Joi.string().trim().min(2).max(150).required(),
+    branchName: Joi.string().trim().min(2).max(150).required(),
+    upiId: Joi.string().trim().max(150).optional(),
+  }).required(),
+  settlement: Joi.object({
+    cycle: Joi.string()
+      .valid("daily", "weekly", "biweekly", "monthly")
+      .required(),
+    dayOfWeek: Joi.number().integer().min(0).max(6).optional(),
+  }).required(),
+});

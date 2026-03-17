@@ -6,9 +6,14 @@ import {
   ProductImage,
   reseller_bank_details,
   reseller_gst_details,
+  Order,
+  Reseller,
+  Payment,
+  PlatformSetting,
 } from "../models/index.js";
 import crypto from "crypto";
 import axios from "axios";
+import Decimal from "decimal.js";
 
 const API_KEY = process.env.SHOPIFY_API_KEY;
 const API_SECRET = process.env.SHOPIFY_API_SECRET;
@@ -59,6 +64,34 @@ class DropshipperController {
     const attributes = await this.getUserProfileAttributes();
     const user = await User.findOne({ where: { user_id: userId }, attributes });
     return user;
+  };
+
+  getAuthenticatedBuyer = async (
+    req,
+    allowedRoles = ["RESELLER", "CUSTOMER"],
+  ) => {
+    const { userId, role } = req.user || {};
+
+    if (!userId || !allowedRoles.includes(role)) {
+      return null;
+    }
+
+    const attributes = await this.getUserProfileAttributes();
+    return User.findOne({ where: { user_id: userId }, attributes });
+  };
+
+  getBulkOrderConfig = async () => {
+    const configRow = await PlatformSetting.findOne({
+      where: { setting_key: "BULK_ORDER_CONFIG" },
+    });
+
+    if (!configRow?.setting_value) {
+      throw new Error(
+        "BULK_ORDER_CONFIG is not configured. Please configure it from admin panel.",
+      );
+    }
+
+    return configRow.setting_value;
   };
 
   buildFileUrl = (req, fieldName) => {
@@ -301,6 +334,309 @@ class DropshipperController {
         data,
         user_id: user.user_id,
         store_id: user.user_id,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  };
+
+  generateInvoiceNumber = () => {
+    const rand = crypto.randomBytes(3).toString("hex").toUpperCase();
+    return `INV-BULK-${Date.now()}-${rand}`;
+  };
+
+  getPlatformPaymentAccountDetails = async () => {
+    const config = await this.getBulkOrderConfig();
+    const paymentAccount = config?.paymentAccount;
+
+    if (!paymentAccount) {
+      throw new Error("paymentAccount is missing in BULK_ORDER_CONFIG");
+    }
+
+    return paymentAccount;
+  };
+
+  createBulkOrder = async (req, res) => {
+    try {
+      const config = await this.getBulkOrderConfig();
+      const allowedRoles = config.allowRoles || ["RESELLER", "CUSTOMER"];
+      const buyerUser = await this.getAuthenticatedBuyer(req, allowedRoles);
+
+      if (!buyerUser) {
+        return res.status(401).json({ success: false, error: "Unauthorized" });
+      }
+
+      const {
+        productId,
+        quantity,
+        gstRate,
+        ssnCode,
+        serviceAccountingCode,
+        userBusinessDetails,
+        checkoutDetails,
+      } = req.body;
+
+      if (Number(quantity) < Number(config.minOrderQty)) {
+        return res.status(400).json({
+          success: false,
+          error: `Minimum order quantity is ${config.minOrderQty}`,
+        });
+      }
+
+      const product = await Product.findOne({
+        where: { product_id: productId },
+      });
+
+      if (!product) {
+        return res
+          .status(404)
+          .json({ success: false, error: "Product not found" });
+      }
+
+      const defaultMarginPerPiece = new Decimal(
+        config.defaultMarginPerPiece || 0,
+      );
+
+      if (
+        (product.bulk_price === null || product.bulk_price === undefined) &&
+        (product.transfer_price === null ||
+          product.transfer_price === undefined)
+      ) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "Pricing is not configured for this product. Provide bulk_price or transfer_price.",
+        });
+      }
+
+      const unitBulkPrice =
+        product.bulk_price !== null && product.bulk_price !== undefined
+          ? new Decimal(product.bulk_price)
+          : new Decimal(product.transfer_price).plus(defaultMarginPerPiece);
+
+      const unitTransferPrice =
+        product.transfer_price !== null && product.transfer_price !== undefined
+          ? new Decimal(product.transfer_price)
+          : Decimal.max(unitBulkPrice.minus(defaultMarginPerPiece), 0);
+
+      const qty = new Decimal(quantity);
+      const applicableGstRate =
+        gstRate !== undefined && gstRate !== null
+          ? new Decimal(gstRate)
+          : new Decimal(config.defaultGstRate || 0);
+
+      const shippingAmount = new Decimal(config.defaultShippingCharge || 0);
+      const platformMarginPerPiece = Decimal.max(
+        unitBulkPrice.minus(unitTransferPrice),
+        0,
+      ).toDecimalPlaces(2);
+      const platformTotalMargin = platformMarginPerPiece
+        .mul(qty)
+        .toDecimalPlaces(2);
+      const supplierPayoutAmount = unitTransferPrice
+        .mul(qty)
+        .toDecimalPlaces(2);
+
+      const checkout = checkoutDetails || {};
+      const business = userBusinessDetails || {};
+      const customerName =
+        checkout.customerName || business.contactName || buyerUser.name;
+      const customerPhone =
+        checkout.customerPhone ||
+        business.contactPhone ||
+        buyerUser.phone_number ||
+        null;
+      const deliveryAddress =
+        checkout.deliveryAddress || business.billingAddress || null;
+
+      const [resellerRecord] = await Reseller.findOrCreate({
+        where: { user_id: buyerUser.user_id },
+        defaults: {
+          user_id: buyerUser.user_id,
+          status: "active",
+        },
+      });
+
+      const subtotal = unitBulkPrice.mul(qty).toDecimalPlaces(2);
+      const gstAmount = subtotal.mul(applicableGstRate).toDecimalPlaces(2);
+      const totalPayable = subtotal
+        .plus(gstAmount)
+        .plus(shippingAmount)
+        .toDecimalPlaces(2);
+
+      const invoiceNumber = this.generateInvoiceNumber();
+      const pendingPaymentStatus =
+        config?.statusFlow?.pendingPayment || "Pending Payment";
+
+      const order = await Order.create({
+        reseller_id: resellerRecord.reseller_id,
+        reseller_user_id: buyerUser.user_id,
+        supplier_id: product.supplier_id,
+        product_id: product.product_id,
+        order_type: "BULK",
+        quantity: quantity,
+        unit_bulk_price: unitBulkPrice.toFixed(2),
+        subtotal: subtotal.toFixed(2),
+        shipping_amount: shippingAmount.toFixed(2),
+        gst_rate: applicableGstRate.toFixed(4),
+        gst_amount: gstAmount.toFixed(2),
+        total_payable: totalPayable.toFixed(2),
+        total_amount: totalPayable.toFixed(2),
+        invoice_number: invoiceNumber,
+        ssn_code: ssnCode,
+        service_accounting_code: serviceAccountingCode,
+        user_business_details: userBusinessDetails || checkoutDetails || null,
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        shipping_address: deliveryAddress,
+        supplier_transfer_price: unitTransferPrice.toFixed(2),
+        platform_margin_per_piece: platformMarginPerPiece.toFixed(2),
+        platform_total_margin: platformTotalMargin.toFixed(2),
+        supplier_payout_amount: supplierPayoutAmount.toFixed(2),
+        supplier_payout_status: "PENDING_DELIVERY",
+        supplier_payout_cycle: config?.settlement?.cycle || null,
+        payment_method: "DIRECT_BANK_TRANSFER",
+        payment_status: "PENDING",
+        order_status: pendingPaymentStatus,
+      });
+
+      const companyBankDetails = await this.getPlatformPaymentAccountDetails();
+
+      return res.status(201).json({
+        success: true,
+        message:
+          "Bulk order created. Please upload payment proof after transferring the payment.",
+        data: {
+          orderId: order.order_id,
+          invoiceNumber: order.invoice_number,
+          productId: order.product_id,
+          quantity: order.quantity,
+          unitBulkPrice: order.unit_bulk_price,
+          subtotal: order.subtotal,
+          shippingAmount: order.shipping_amount,
+          gstRate: order.gst_rate,
+          gstAmount: order.gst_amount,
+          totalPayable: order.total_payable,
+          supplierTransferPrice: order.supplier_transfer_price,
+          platformMarginPerPiece: order.platform_margin_per_piece,
+          platformTotalMargin: order.platform_total_margin,
+          supplierPayoutAmount: order.supplier_payout_amount,
+          supplierPayoutStatus: order.supplier_payout_status,
+          ssnCode: order.ssn_code,
+          serviceAccountingCode: order.service_accounting_code,
+          orderStatus: order.order_status,
+          paymentStatus: order.payment_status,
+          companyBankDetails,
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  };
+
+  getBulkOrderBankDetails = async (req, res) => {
+    try {
+      const config = await this.getBulkOrderConfig();
+      const allowedRoles = config.allowRoles || ["RESELLER", "CUSTOMER"];
+      const buyerUser = await this.getAuthenticatedBuyer(req, allowedRoles);
+
+      if (!buyerUser) {
+        return res.status(401).json({ success: false, error: "Unauthorized" });
+      }
+
+      const { productId } = req.params;
+      const product = await Product.findOne({
+        where: { product_id: productId },
+      });
+
+      if (!product) {
+        return res
+          .status(404)
+          .json({ success: false, error: "Product not found" });
+      }
+
+      const companyBankDetails = await this.getPlatformPaymentAccountDetails();
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          productId,
+          supplierId: product.supplier_id,
+          minOrderQty: config.minOrderQty,
+          companyBankDetails,
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  };
+
+  submitBulkOrderPaymentProof = async (req, res) => {
+    try {
+      const config = await this.getBulkOrderConfig();
+      const allowedRoles = config.allowRoles || ["RESELLER", "CUSTOMER"];
+      const buyerUser = await this.getAuthenticatedBuyer(req, allowedRoles);
+
+      if (!buyerUser) {
+        return res.status(401).json({ success: false, error: "Unauthorized" });
+      }
+
+      const { orderId } = req.params;
+      const { transactionReference, paymentMode, amount, notes } = req.body;
+
+      const order = await Order.findOne({
+        where: {
+          order_id: orderId,
+          order_type: "BULK",
+          reseller_user_id: buyerUser.user_id,
+        },
+      });
+
+      if (!order) {
+        return res
+          .status(404)
+          .json({ success: false, error: "Bulk order not found" });
+      }
+
+      const screenshotUrl = this.buildFileUrl(req, "paymentScreenshot");
+      if (!screenshotUrl) {
+        return res.status(400).json({
+          success: false,
+          error: "paymentScreenshot is required",
+        });
+      }
+
+      await Payment.create({
+        order_id: order.order_id,
+        payment_mode: paymentMode,
+        amount:
+          amount ?? Number(order.total_payable || order.total_amount || 0),
+        payment_status: "initiated",
+        transaction_ref: transactionReference,
+        payment_screenshot_url: screenshotUrl,
+        verification_status: "pending",
+        gateway: notes || null,
+      });
+
+      order.transaction_reference = transactionReference;
+      order.payment_status = "PROOF_SUBMITTED";
+      await order.save();
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "Payment proof submitted successfully. Awaiting admin verification.",
+        data: {
+          orderId: order.order_id,
+          orderStatus: order.order_status,
+          paymentStatus: order.payment_status,
+          transactionReference,
+          paymentMode,
+          paymentScreenshot: screenshotUrl,
+        },
       });
     } catch (error) {
       console.error(error);
