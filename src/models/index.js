@@ -26,6 +26,7 @@ import { CodSettings } from "./cod_settings.js";
 import { AwbPool } from "./awb_pool.js";
 import { ProductOption } from './product_options.js'
 import { ProductOptionValue } from './product_option_values.js'
+import { Settlement } from "./settlements.js";
 
 
 export {
@@ -56,5 +57,6 @@ export {
     CodSettings,
     AwbPool,
     ProductOption,
-    ProductOptionValue
+    ProductOptionValue,
+    Settlement,
 }

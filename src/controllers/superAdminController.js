@@ -1,4 +1,4 @@
-import { getPendingProducts, getPendingStats, getProductById, approveProduct as approveProductFn, rejectProduct as rejectProductFn, modifiedProducts as modifiedProductsFn, updateProduct as updateProductAdmin, getAllSupplier, supplierKycVerification, verifySupplier, rejectSupplierProof, getLiveProducts, getLiveProductsStats, updateLiveProductStatus as updateLiveProductStatusFn, archiveLiveProduct, getRejectedProducts, getRejectedStats, deleteOrResubmitRejectedProduct } from "../utils/adminFunc.js";
+import { getPendingProducts, getPendingStats, getProductById, approveProduct as approveProductFn, rejectProduct as rejectProductFn, modifiedProducts as modifiedProductsFn, updateProduct as updateProductAdmin, getAllSupplier, supplierKycVerification, verifySupplier, rejectSupplierProof, getLiveProducts, getLiveProductsStats, updateLiveProductStatus as updateLiveProductStatusFn, archiveLiveProduct, getRejectedProducts, getRejectedStats, deleteOrResubmitRejectedProduct, getSupplierPayoutStats, getSupplierPayoutList, getPartnerPayoutStats, getPartnerPayoutList, getSettlementStats, getSettlementList, getTransactionStats, getTransactionList, getWalletStats, getWalletList } from "../utils/adminFunc.js";
 
 
 
@@ -213,6 +213,115 @@ class SuperAdminController {
         }
     };
 
+    getSupplierPayoutStats = async (_req, res) => {
+        try {
+            const result = await getSupplierPayoutStats();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching supplier payout stats:", error);
+            res.status(500).json({ error: "Failed to fetch payout stats" });
+        }
+    };
+
+    getSupplierPayoutList = async (_req, res) => {
+        try {
+            const result = await getSupplierPayoutList();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching supplier payout list:", error);
+            res.status(500).json({ error: "Failed to fetch payout list" });
+        }
+    };
+
+    getPartnerPayoutStats = async (_req, res) => {
+        try {
+            const result = await getPartnerPayoutStats();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching partner payout stats:", error);
+            res.status(500).json({ error: "Failed to fetch payout stats" });
+        }
+    };
+
+    getPartnerPayoutList = async (_req, res) => {
+        try {
+            const result = await getPartnerPayoutList();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching partner payout list:", error);
+            res.status(500).json({ error: "Failed to fetch payout list" });
+        }
+    };
+
+    getSettlementStats = async (_req, res) => {
+        try {
+            const result = await getSettlementStats();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching settlement stats:", error);
+            res.status(500).json({ error: "Failed to fetch settlement stats" });
+        }
+    };
+
+    getSettlementList = async (req, res) => {
+        try {
+            const result = await getSettlementList(req);
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching settlement list:", error);
+            res.status(500).json({ error: "Failed to fetch settlement list" });
+        }
+    };
+
+    getTransactionStats = async (_req, res) => {
+        try {
+            const result = await getTransactionStats();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching transaction stats:", error);
+            res.status(500).json({ error: "Failed to fetch transaction stats" });
+        }
+    };
+
+    getTransactionList = async (req, res) => {
+        try {
+            const result = await getTransactionList(req);
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching transaction list:", error);
+            res.status(500).json({ error: "Failed to fetch transaction list" });
+        }
+    };
+
+    getWalletStats = async (_req, res) => {
+        try {
+            const result = await getWalletStats();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching wallet stats:", error);
+            res.status(500).json({ error: "Failed to fetch wallet stats" });
+        }
+    };
+
+    getWalletList = async (_req, res) => {
+        try {
+            const result = await getWalletList();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching wallet list:", error);
+            res.status(500).json({ error: "Failed to fetch wallet list" });
+        }
+    };
 }
 
 export default new SuperAdminController();
