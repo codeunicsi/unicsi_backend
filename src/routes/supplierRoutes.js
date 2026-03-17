@@ -70,6 +70,11 @@ router.get(
   supplierController.get_bulk_price_refresh_reminders,
 );
 router.get(
+  "/source-requests/submitted",
+  auth,
+  supplierController.get_submitted_source_requests,
+);
+router.get(
   "/stores/products/:product_id",
   auth,
   supplierController.get_single_product,

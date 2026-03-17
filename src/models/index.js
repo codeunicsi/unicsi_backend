@@ -23,6 +23,7 @@ import { ShopifyStore } from "./shopify_store.js";
 import { User } from "./User.js";
 import { Payment } from "./payments.js";
 import { PlatformSetting } from "./platform_settings.js";
+import { DropshipperSourceRequest } from "./dropshipper_source_requests.js";
 
 export {
   Supplier,
@@ -50,4 +51,5 @@ export {
   User,
   Payment,
   PlatformSetting,
+  DropshipperSourceRequest,
 };

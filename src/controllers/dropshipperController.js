@@ -10,6 +10,7 @@ import {
   Reseller,
   Payment,
   PlatformSetting,
+  DropshipperSourceRequest,
 } from "../models/index.js";
 import crypto from "crypto";
 import axios from "axios";
@@ -640,6 +641,69 @@ class DropshipperController {
       });
     } catch (error) {
       console.error(error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  };
+
+  submitSourceRequest = async (req, res) => {
+    try {
+      const user = await this.getAuthenticatedReseller(req);
+
+      if (!user) {
+        return res.status(401).json({ success: false, error: "Unauthorized" });
+      }
+
+      const { productName, productCategory, productImageUrl, expectedPrice } =
+        req.body;
+
+      const uploadedImageUrl = this.buildFileUrl(req, "productImage");
+      const directImageUrl =
+        productImageUrl && String(productImageUrl).trim()
+          ? String(productImageUrl).trim()
+          : null;
+      const hasUploadedImage = Boolean(uploadedImageUrl);
+      const hasDirectImageUrl = Boolean(directImageUrl);
+
+      if (!hasUploadedImage && !hasDirectImageUrl) {
+        return res.status(400).json({
+          success: false,
+          error: "Either productImage upload or productImageUrl is required",
+        });
+      }
+
+      if (hasUploadedImage && hasDirectImageUrl) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "Provide either productImage upload or productImageUrl, not both",
+        });
+      }
+
+      const sourceRequest = await DropshipperSourceRequest.create({
+        user_id: user.user_id,
+        product_name: productName,
+        product_category: productCategory,
+        product_image_url: uploadedImageUrl || directImageUrl,
+        product_url: null,
+        expected_price: expectedPrice,
+        status: "IN_REVIEW",
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: "Product sourcing request submitted successfully",
+        data: {
+          requestId: sourceRequest.request_id,
+          productName: sourceRequest.product_name,
+          productCategory: sourceRequest.product_category,
+          productImageUrl: sourceRequest.product_image_url,
+          expectedPrice: sourceRequest.expected_price,
+          status: sourceRequest.status,
+          createdAt: sourceRequest.created_at,
+        },
+      });
+    } catch (error) {
+      console.error("Error submitting source request:", error);
       return res.status(500).json({ success: false, error: error.message });
     }
   };

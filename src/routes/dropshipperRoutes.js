@@ -12,6 +12,7 @@ import {
   validateWithJoi,
   bulkOrderSchema,
   bulkOrderPaymentProofSchema,
+  dropshipperSourceRequestSchema,
 } from "../utils/constant.js";
 
 router.get(
@@ -130,6 +131,15 @@ router.post(
   upload.fields([{ name: "paymentScreenshot", maxCount: 1 }]),
   validateWithJoi(bulkOrderPaymentProofSchema),
   DropshipperController.submitBulkOrderPaymentProof,
+);
+
+router.post(
+  "/source-requests",
+  auth,
+  requireRole("RESELLER"),
+  upload.fields([{ name: "productImage", maxCount: 1 }]),
+  validateWithJoi(dropshipperSourceRequestSchema),
+  DropshipperController.submitSourceRequest,
 );
 
 // shopify webhooks

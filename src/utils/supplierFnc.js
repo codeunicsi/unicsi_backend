@@ -8,6 +8,7 @@ import {
   supplier_bank_details,
   supplier_gst_details,
   PlatformSetting,
+  DropshipperSourceRequest,
 } from "../models/index.js";
 import { Op } from "sequelize";
 import bcrypt from "bcrypt";
@@ -258,6 +259,50 @@ export const get_bulk_price_refresh_reminders = async (req) => {
         refreshDays,
         count: dueProducts.length,
         products: dueProducts,
+      },
+    };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
+export const get_submitted_source_requests = async (req) => {
+  try {
+    const supplierId = req.user.supplierId;
+    const role = req.user.role;
+
+    if (!supplierId) {
+      return { success: false, error: "Supplier ID is required!" };
+    }
+
+    if (role !== "SUPPLIER") {
+      return { success: false, error: "Unauthorized!" };
+    }
+
+    const requests = await DropshipperSourceRequest.findAll({
+      where: { status: "IN_REVIEW" },
+      order: [["createdAt", "DESC"]],
+    });
+
+    const data = requests.map((request) => {
+      const plain = request.toJSON();
+
+      return {
+        requestId: plain.request_id,
+        productName: plain.product_name,
+        productCategory: plain.product_category,
+        productImageUrl: plain.product_image_url,
+        expectedPrice: plain.expected_price,
+        status: plain.status,
+        submittedAt: plain.createdAt,
+      };
+    });
+
+    return {
+      success: true,
+      data: {
+        count: data.length,
+        requests: data,
       },
     };
   } catch (error) {

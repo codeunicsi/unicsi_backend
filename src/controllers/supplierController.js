@@ -27,6 +27,7 @@ import {
   get_single_product,
   update_product,
   get_bulk_price_refresh_reminders,
+  get_submitted_source_requests,
 } from "../utils/supplierFnc.js";
 
 class SupplierController {
@@ -192,6 +193,15 @@ class SupplierController {
   async get_bulk_price_refresh_reminders(req, res) {
     try {
       const result = await get_bulk_price_refresh_reminders(req);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  async get_submitted_source_requests(req, res) {
+    try {
+      const result = await get_submitted_source_requests(req);
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: error.message });

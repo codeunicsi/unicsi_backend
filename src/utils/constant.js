@@ -270,6 +270,13 @@ export const bulkOrderPaymentProofSchema = Joi.object({
   notes: Joi.string().trim().max(500).optional(),
 });
 
+export const dropshipperSourceRequestSchema = Joi.object({
+  productName: Joi.string().trim().min(2).max(200).required(),
+  productCategory: Joi.string().trim().min(1).max(120).required(),
+  productImageUrl: Joi.string().trim().uri().max(1000).optional().allow(""),
+  expectedPrice: Joi.number().positive().required(),
+});
+
 export const bulkOrderPaymentRejectSchema = Joi.object({
   reason: Joi.string().trim().min(3).max(500).required(),
 });
