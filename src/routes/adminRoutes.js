@@ -32,6 +32,26 @@ router.post("/supplier-verify", SuperAdminController.verifySupplier);
 // supplier reject
 router.post("/supplier/kyc/reject", SuperAdminController.rejectSupplierProof);
 
+// payouts - supplier
+router.get("/payouts/suppliers/stats", SuperAdminController.getSupplierPayoutStats);
+router.get("/payouts/suppliers", SuperAdminController.getSupplierPayoutList);
+
+// payouts - partner (reseller)
+router.get("/payouts/partners/stats", SuperAdminController.getPartnerPayoutStats);
+router.get("/payouts/partners", SuperAdminController.getPartnerPayoutList);
+
+// payouts - settlement reports
+router.get("/payouts/settlements/stats", SuperAdminController.getSettlementStats);
+router.get("/payouts/settlements", SuperAdminController.getSettlementList);
+
+// payouts - transaction history
+router.get("/payouts/transactions/stats", SuperAdminController.getTransactionStats);
+router.get("/payouts/transactions", SuperAdminController.getTransactionList);
+
+// payouts - wallet management
+router.get("/payouts/wallet/stats", SuperAdminController.getWalletStats);
+router.get("/payouts/wallet", SuperAdminController.getWalletList);
+
 router.use("/logistics", logisticsRoutes);
 
 export default router;

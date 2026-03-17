@@ -1,5 +1,5 @@
-import { Supplier, Product, ProductVariant, ProductImage, Warehouse, Inventory, SupplierPricing, Reseller, Order, NdrCase, supplier_gst_details, SupplierKyc, CourierPartner, CourierServiceability, CourierRateCard, AwbPool } from "../models/index.js";
-import { User } from "../models/User.js";
+import { Supplier, Product, ProductVariant, ProductImage, Warehouse, Inventory, SupplierPricing, Reseller, Order, NdrCase, supplier_gst_details, supplier_bank_details, SupplierKyc, CourierPartner, CourierServiceability, CourierRateCard, AwbPool } from "../models/index.js";
+import User from "../models/User.js";
 
 /* ===========================
     ASSOCIATIONS (MUST BE HERE)
@@ -71,10 +71,14 @@ SupplierPricing.belongsTo(ProductVariant, {
 Reseller.hasMany(Order, { foreignKey: "reseller_id" });
 Order.belongsTo(Reseller);
 
+Reseller.belongsTo(User, { foreignKey: "user_id", as: "user" });
+User.hasMany(Reseller, { foreignKey: "user_id" });
 
 Supplier.hasOne(supplier_gst_details, { foreignKey: "supplier_id",
     as: "gst_details",
  });
+Supplier.hasOne(supplier_bank_details, { foreignKey: "supplier_id", as: "bank_details" });
+supplier_bank_details.belongsTo(Supplier, { foreignKey: "supplier_id" });
 
  Supplier.hasOne(SupplierKyc, {
   foreignKey: "supplier_id",
