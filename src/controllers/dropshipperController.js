@@ -24,6 +24,26 @@ const REDIRECT_URI = process.env.SHOPIFY_REDIRECT_URI;
 class DropshipperController {
   userPhoneColumnExists = null;
 
+  hasUnexpectedFields = (body, allowedFields) => {
+    const keys = Object.keys(body || {});
+    const unexpected = keys.filter((key) => !allowedFields.includes(key));
+    return { hasUnexpected: unexpected.length > 0, unexpected };
+  };
+
+  formatBankDetails = (record) => ({
+    holderName: record?.account_holder_name || null,
+    accountNumber: record?.account_number || null,
+    ifsc: record?.ifsc_code || null,
+    bankDetailProof: record?.bank_detail_proof || null,
+  });
+
+  formatGstDetails = (record) => ({
+    gstNumber: record?.gst_number || null,
+    panCardNumber: record?.pan_number || null,
+    gstCertificate: record?.gst_image || null,
+    panCardNumberImage: record?.pan_image || null,
+  });
+
   getUserProfileAttributes = async () => {
     const baseAttributes = [
       "user_id",
@@ -191,20 +211,33 @@ class DropshipperController {
         return res.status(401).json({ success: false, error: "Unauthorized" });
       }
 
-      const {
-        holderName,
-        accountNumber,
-        reAccountNumber,
-        ifsc,
-        bankName,
-        branchName,
-      } = req.body;
+      const { hasUnexpected, unexpected } = this.hasUnexpectedFields(req.body, [
+        "holderName",
+        "accountNumber",
+        "ifsc",
+      ]);
 
-      // reAccountNumber cross-check (format already validated by middleware)
-      if (reAccountNumber && reAccountNumber !== accountNumber) {
+      if (hasUnexpected) {
         return res.status(400).json({
           success: false,
-          error: "Account number and reAccountNumber must match",
+          error: `Unexpected fields: ${unexpected.join(", ")}`,
+        });
+      }
+
+      const { holderName, accountNumber, ifsc } = req.body;
+      const normalizedHolderName = String(holderName || "").trim();
+      const normalizedAccountNumber = String(accountNumber || "").trim();
+      const normalizedIfsc = String(ifsc || "").trim();
+
+      if (
+        !normalizedHolderName ||
+        !normalizedAccountNumber ||
+        !normalizedIfsc
+      ) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "holderName, accountNumber and ifsc are required and cannot be null",
         });
       }
 
@@ -213,13 +246,19 @@ class DropshipperController {
       });
 
       const bankProofUrl = this.buildFileUrl(req, "bankDetailProof");
+
+      if (!bankProofUrl && !existingDetails?.bank_detail_proof) {
+        return res.status(400).json({
+          success: false,
+          error: "bankDetailProof is required",
+        });
+      }
+
       const payload = {
         user_id: user.user_id,
-        account_holder_name: holderName,
-        account_number: accountNumber,
-        ifsc_code: ifsc,
-        bank_name: bankName || existingDetails?.bank_name || null,
-        branch_name: branchName || existingDetails?.branch_name || null,
+        account_holder_name: normalizedHolderName,
+        account_number: normalizedAccountNumber,
+        ifsc_code: normalizedIfsc,
         bank_detail_proof:
           bankProofUrl || existingDetails?.bank_detail_proof || null,
         bank_details_status: true,
@@ -236,7 +275,7 @@ class DropshipperController {
 
       return res.status(200).json({
         success: true,
-        data,
+        data: this.formatBankDetails(data),
         message: "Bank details saved successfully",
       });
     } catch (error) {
@@ -259,7 +298,7 @@ class DropshipperController {
 
       return res.status(200).json({
         success: true,
-        data,
+        data: this.formatBankDetails(data),
         user_id: user.user_id,
         store_id: user.user_id,
       });
@@ -277,7 +316,28 @@ class DropshipperController {
         return res.status(401).json({ success: false, error: "Unauthorized" });
       }
 
-      const { gstName, gstNumber, panCardNumber } = req.body;
+      const { hasUnexpected, unexpected } = this.hasUnexpectedFields(req.body, [
+        "gstNumber",
+        "panCardNumber",
+      ]);
+
+      if (hasUnexpected) {
+        return res.status(400).json({
+          success: false,
+          error: `Unexpected fields: ${unexpected.join(", ")}`,
+        });
+      }
+
+      const { gstNumber, panCardNumber } = req.body;
+      const normalizedGstNumber = String(gstNumber || "").trim();
+      const normalizedPanCardNumber = String(panCardNumber || "").trim();
+
+      if (!normalizedGstNumber || !normalizedPanCardNumber) {
+        return res.status(400).json({
+          success: false,
+          error: "gstNumber and panCardNumber are required and cannot be null",
+        });
+      }
       // required-field and format checks are handled by validate(gstDetailsRules) middleware
 
       const existingDetails = await reseller_gst_details.findOne({
@@ -287,11 +347,25 @@ class DropshipperController {
       const gstImage = this.buildFileUrl(req, "gstCertificate");
       const panImage = this.buildFileUrl(req, "panCardNumberImage");
 
+      if (!gstImage && !existingDetails?.gst_image) {
+        return res.status(400).json({
+          success: false,
+          error: "gstCertificate is required",
+        });
+      }
+
+      if (!panImage && !existingDetails?.pan_image) {
+        return res.status(400).json({
+          success: false,
+          error: "panCardNumberImage is required",
+        });
+      }
+
       const payload = {
         user_id: user.user_id,
-        gst_name: gstName,
-        gst_number: gstNumber,
-        pan_number: panCardNumber,
+        gst_name: existingDetails?.gst_name || normalizedGstNumber,
+        gst_number: normalizedGstNumber,
+        pan_number: normalizedPanCardNumber,
         gst_validity: new Date(),
         gst_status: true,
         gst_image: gstImage || existingDetails?.gst_image || null,
@@ -309,7 +383,7 @@ class DropshipperController {
 
       return res.status(200).json({
         success: true,
-        data,
+        data: this.formatGstDetails(data),
         message: "GST details saved successfully",
       });
     } catch (error) {
@@ -332,7 +406,7 @@ class DropshipperController {
 
       return res.status(200).json({
         success: true,
-        data,
+        data: this.formatGstDetails(data),
         user_id: user.user_id,
         store_id: user.user_id,
       });

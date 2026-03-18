@@ -204,19 +204,11 @@ export const bankDetailsRules = [
     validator: validateBankAccountNumber,
     required: true,
   },
-  {
-    field: "reAccountNumber",
-    validator: validateBankAccountNumber,
-    required: false,
-  },
   { field: "ifsc", validator: validateIFSC, required: true },
-  { field: "bankName", validator: validateBankName, required: false },
-  { field: "branchName", validator: validateBankName, required: false },
 ];
 
 /** POST|PUT /dropshipper/stores/gstDetails */
 export const gstDetailsRules = [
-  { field: "gstName", validator: validateBusinessName, required: true },
   { field: "gstNumber", validator: validateGSTNumber, required: true },
   { field: "panCardNumber", validator: validatePAN, required: true },
 ];
