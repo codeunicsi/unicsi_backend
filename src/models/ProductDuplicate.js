@@ -26,7 +26,7 @@ export const Product = sequelize.define(
     },
 
     category_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
       allowNull: true,
     },
 

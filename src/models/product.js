@@ -26,7 +26,7 @@ export const Product = sequelize.define(
     },
 
     category_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
       allowNull: true,
     },
 
@@ -51,6 +51,24 @@ export const Product = sequelize.define(
       type: DataTypes.DECIMAL(12, 2),
       allowNull: true,
       defaultValue: null,
+    },
+
+    gst_rate: {
+      type: DataTypes.DECIMAL(5, 4),
+      allowNull: false,
+      defaultValue: 0.18,
+    },
+
+    minimum_order_quantity: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 10,
+    },
+
+    bulk_price_refresh_days: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 20,
     },
 
     bulk_price_updated_at: {

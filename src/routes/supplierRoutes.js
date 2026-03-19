@@ -75,6 +75,11 @@ router.get(
   supplierController.get_submitted_source_requests,
 );
 router.get(
+  "/bulk-orders",
+  auth,
+  supplierController.get_supplier_bulk_orders,
+);
+router.get(
   "/stores/products/:product_id",
   auth,
   supplierController.get_single_product,

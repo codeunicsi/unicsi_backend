@@ -18,9 +18,117 @@ import {
   getRejectedStats,
   deleteOrResubmitRejectedProduct,
 } from "../utils/adminFunc.js";
-import { Order, Payment, PlatformSetting } from "../models/index.js";
+import { Order, Payment, PlatformSetting, Product } from "../models/index.js";
 
 class SuperAdminController {
+  getAllBulkOrders = async (req, res) => {
+    try {
+      const { paymentStatus, orderStatus, page = 1, limit = 20 } = req.query;
+      const where = { order_type: "BULK" };
+
+      if (paymentStatus) {
+        where.payment_status = paymentStatus;
+      }
+
+      if (orderStatus) {
+        where.order_status = orderStatus;
+      }
+
+      const safePage = Math.max(Number(page) || 1, 1);
+      const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
+      const offset = (safePage - 1) * safeLimit;
+
+      const { count, rows } = await Order.findAndCountAll({
+        where,
+        order: [["createdAt", "DESC"]],
+        limit: safeLimit,
+        offset,
+      });
+
+      const orderIds = rows.map((order) => order.order_id);
+      const productIds = [
+        ...new Set(rows.map((order) => order.product_id).filter(Boolean)),
+      ];
+      const payments = orderIds.length
+        ? await Payment.findAll({
+            where: { order_id: orderIds },
+            order: [["created_at", "DESC"]],
+          })
+        : [];
+
+      const products = productIds.length
+        ? await Product.findAll({
+            where: { product_id: productIds },
+            attributes: ["product_id", "title"],
+          })
+        : [];
+
+      const productTitleById = new Map(
+        products.map((product) => [product.product_id, product.title]),
+      );
+
+      const latestPaymentByOrder = new Map();
+      for (const payment of payments) {
+        if (!latestPaymentByOrder.has(payment.order_id)) {
+          latestPaymentByOrder.set(payment.order_id, payment);
+        }
+      }
+
+      const orders = rows.map((order) => {
+        const latestPayment = latestPaymentByOrder.get(order.order_id);
+        return {
+          orderId: order.order_id,
+          invoiceNumber: order.invoice_number,
+          productId: order.product_id,
+          productTitle: productTitleById.get(order.product_id) || null,
+          supplierId: order.supplier_id,
+          resellerId: order.reseller_id,
+          resellerUserId: order.reseller_id,
+          quantity: order.quantity,
+          customerName: order.customer_name,
+          customerPhone: order.customer_phone,
+          customerEmail: order.user_business_details?.customerEmail || null,
+          deliveryAddress: order.shipping_address,
+          totalPayable: order.total_payable,
+          orderStatus: order.order_status,
+          paymentStatus: order.payment_status,
+          transactionReference:
+            order.transaction_reference ||
+            latestPayment?.transaction_ref ||
+            null,
+          submittedAt: order.createdAt,
+          paymentProof: latestPayment
+            ? {
+                paymentId: latestPayment.payment_id,
+                paymentMode: latestPayment.payment_mode,
+                amount: latestPayment.amount,
+                screenshotUrl: latestPayment.payment_screenshot_url,
+                verificationStatus: latestPayment.verification_status,
+                rejectedReason: latestPayment.rejection_reason || null,
+                createdAt: latestPayment.createdAt,
+              }
+            : null,
+        };
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          count,
+          page: safePage,
+          limit: safeLimit,
+          orders,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching bulk orders:", error);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to fetch bulk orders",
+      });
+    }
+  };
+
   getBulkOrderConfig = async (_req, res) => {
     try {
       const config = await PlatformSetting.findOne({

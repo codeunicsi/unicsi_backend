@@ -236,26 +236,10 @@ export const validateWithJoi = (schema) => (req, res, next) => {
 export const bulkOrderSchema = Joi.object({
   productId: Joi.string().uuid().required(),
   quantity: Joi.number().integer().min(1).required(),
-  gstRate: Joi.number().min(0).max(1).optional(),
-  ssnCode: Joi.string().trim().max(50).optional(),
-  serviceAccountingCode: Joi.string().trim().max(50).optional(),
-  userBusinessDetails: Joi.object({
-    businessName: Joi.string().trim().min(2).max(120).required(),
-    gstNumber: Joi.string().trim().optional(),
-    contactName: Joi.string().trim().min(2).max(100).optional(),
-    contactPhone: Joi.string().trim().optional(),
-    billingAddress: Joi.string().trim().max(500).optional(),
-    notes: Joi.string().trim().max(500).optional(),
-  }).optional(),
-  checkoutDetails: Joi.object({
-    customerName: Joi.string().trim().min(2).max(120).required(),
-    customerPhone: Joi.string().trim().min(10).max(20).required(),
-    deliveryAddress: Joi.string().trim().min(5).max(500).required(),
-    notes: Joi.string().trim().max(500).optional(),
-  }).optional(),
-}).or("userBusinessDetails", "checkoutDetails");
-
-export const bulkOrderPaymentProofSchema = Joi.object({
+  customerName: Joi.string().trim().min(2).max(120).required(),
+  customerPhone: Joi.string().trim().min(10).max(20).required(),
+  customerEmail: Joi.string().trim().email().max(120).optional().allow(""),
+  deliveryAddress: Joi.string().trim().min(5).max(500).required(),
   transactionReference: Joi.string().trim().max(120).required(),
   paymentMode: Joi.string().valid("upi", "bank_transfer").required(),
   amount: Joi.number().positive().optional(),
@@ -273,11 +257,9 @@ export const bulkOrderPaymentRejectSchema = Joi.object({
   reason: Joi.string().trim().min(3).max(500).required(),
 });
 
+// Admin-only config for bulk order platform settings
+// Supplier-level settings (minOrderQty, defaultGstRate, defaultShippingCharge) are managed per supplier profile
 export const bulkOrderConfigSchema = Joi.object({
-  minOrderQty: Joi.number().integer().min(1).required(),
-  supplierBulkPriceRefreshDays: Joi.number().integer().min(1).required(),
-  defaultGstRate: Joi.number().min(0).max(1).required(),
-  defaultShippingCharge: Joi.number().min(0).required(),
   defaultMarginPerPiece: Joi.number().min(0).required(),
   allowRoles: Joi.array()
     .items(Joi.string().valid("CUSTOMER", "RESELLER", "SUPPLIER"))

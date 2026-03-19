@@ -11,7 +11,6 @@ import {
   gstDetailsRules,
   validateWithJoi,
   bulkOrderSchema,
-  bulkOrderPaymentProofSchema,
   dropshipperSourceRequestSchema,
 } from "../utils/constant.js";
 
@@ -115,6 +114,7 @@ router.get(
 router.post(
   "/bulk/orders",
   auth,
+  upload.fields([{ name: "paymentScreenshot", maxCount: 1 }]),
   validateWithJoi(bulkOrderSchema),
   DropshipperController.createBulkOrder,
 );
@@ -123,14 +123,6 @@ router.get(
   "/bulk/orders/bank-details/:productId",
   auth,
   DropshipperController.getBulkOrderBankDetails,
-);
-
-router.post(
-  "/bulk/orders/:orderId/payment-proof",
-  auth,
-  upload.fields([{ name: "paymentScreenshot", maxCount: 1 }]),
-  validateWithJoi(bulkOrderPaymentProofSchema),
-  DropshipperController.submitBulkOrderPaymentProof,
 );
 
 router.post(

@@ -28,6 +28,7 @@ import {
   update_product,
   get_bulk_price_refresh_reminders,
   get_submitted_source_requests,
+  get_supplier_bulk_orders,
 } from "../utils/supplierFnc.js";
 
 class SupplierController {
@@ -202,6 +203,15 @@ class SupplierController {
   async get_submitted_source_requests(req, res) {
     try {
       const result = await get_submitted_source_requests(req);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  async get_supplier_bulk_orders(req, res) {
+    try {
+      const result = await get_supplier_bulk_orders(req);
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: error.message });

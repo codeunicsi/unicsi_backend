@@ -3,6 +3,8 @@ import {
   ProductImage,
   Product,
   ProductVariant,
+  Order,
+  Payment,
   Warehouse,
   Inventory,
   supplier_bank_details,
@@ -310,6 +312,95 @@ export const get_submitted_source_requests = async (req) => {
   }
 };
 
+export const get_supplier_bulk_orders = async (req) => {
+  try {
+    const supplierId = req.user.supplierId;
+    const role = req.user.role;
+
+    if (!supplierId) {
+      return { success: false, error: "Supplier ID is required!" };
+    }
+
+    if (role !== "SUPPLIER") {
+      return { success: false, error: "Unauthorized!" };
+    }
+
+    const orders = await Order.findAll({
+      where: {
+        supplier_id: supplierId,
+        order_type: "BULK",
+        payment_status: "VERIFIED",
+      },
+      order: [["createdAt", "DESC"]],
+    });
+
+    const orderIds = orders.map((order) => order.order_id);
+    const productIds = [
+      ...new Set(orders.map((order) => order.product_id).filter(Boolean)),
+    ];
+    const payments = orderIds.length
+      ? await Payment.findAll({
+          where: { order_id: orderIds },
+          order: [["created_at", "DESC"]],
+        })
+      : [];
+
+    const products = productIds.length
+      ? await Product.findAll({
+          where: { product_id: productIds },
+          attributes: ["product_id", "title"],
+        })
+      : [];
+
+    const productTitleById = new Map(
+      products.map((product) => [product.product_id, product.title]),
+    );
+
+    const latestPaymentByOrder = new Map();
+    for (const payment of payments) {
+      if (!latestPaymentByOrder.has(payment.order_id)) {
+        latestPaymentByOrder.set(payment.order_id, payment);
+      }
+    }
+
+    const data = orders.map((order) => {
+      const plain = order.toJSON();
+      const latestPayment = latestPaymentByOrder.get(plain.order_id);
+
+      return {
+        orderId: plain.order_id,
+        invoiceNumber: plain.invoice_number,
+        productId: plain.product_id,
+        productTitle: productTitleById.get(plain.product_id) || null,
+        quantity: plain.quantity,
+        customerName: plain.customer_name,
+        customerPhone: plain.customer_phone,
+        customerEmail: plain.user_business_details?.customerEmail || null,
+        deliveryAddress: plain.shipping_address,
+        unitBulkPrice: plain.unit_bulk_price,
+        totalPayable: plain.total_payable,
+        supplierPayoutAmount: plain.supplier_payout_amount,
+        supplierPayoutStatus: plain.supplier_payout_status,
+        orderStatus: plain.order_status,
+        paymentStatus: plain.payment_status,
+        transactionReference:
+          plain.transaction_reference || latestPayment?.transaction_ref || null,
+        submittedAt: plain.createdAt,
+      };
+    });
+
+    return {
+      success: true,
+      data: {
+        count: data.length,
+        orders: data,
+      },
+    };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
 export const login = async (req, res) => {
   try {
     const { emailOrNumber, password } = req.body;
@@ -600,6 +691,9 @@ export const add_products = async (req) => {
       bulk_price,
       mrp,
       transfer_price,
+      gst_rate,
+      minimum_order_quantity,
+      bulk_price_refresh_days,
     } = req.body;
 
     // Create product
@@ -613,6 +707,9 @@ export const add_products = async (req) => {
       ...(bulk_price !== undefined && { bulk_price }),
       ...(mrp !== undefined && { mrp }),
       ...(transfer_price !== undefined && { transfer_price }),
+      ...(gst_rate !== undefined && { gst_rate }),
+      ...(minimum_order_quantity !== undefined && { minimum_order_quantity }),
+      ...(bulk_price_refresh_days !== undefined && { bulk_price_refresh_days }),
       ...(bulk_price !== undefined && { bulk_price_updated_at: new Date() }),
     });
 
@@ -689,6 +786,9 @@ export const add_products = async (req) => {
         bulk_price: product.bulk_price,
         mrp: product.mrp,
         transfer_price: product.transfer_price,
+        gst_rate: product.gst_rate,
+        minimum_order_quantity: product.minimum_order_quantity,
+        bulk_price_refresh_days: product.bulk_price_refresh_days,
         variantCount: createdVariants.length,
         imagesCount: req.files?.length || 0,
         approval_status,
@@ -798,6 +898,18 @@ export const update_product = async (req) => {
 
     if (req.body.mrp !== undefined) {
       updatePayload.mrp = req.body.mrp;
+    }
+
+    if (req.body.gst_rate !== undefined) {
+      updatePayload.gst_rate = req.body.gst_rate;
+    }
+
+    if (req.body.minimum_order_quantity !== undefined) {
+      updatePayload.minimum_order_quantity = req.body.minimum_order_quantity;
+    }
+
+    if (req.body.bulk_price_refresh_days !== undefined) {
+      updatePayload.bulk_price_refresh_days = req.body.bulk_price_refresh_days;
     }
 
     await product.update(updatePayload);

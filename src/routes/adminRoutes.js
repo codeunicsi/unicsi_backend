@@ -83,4 +83,11 @@ router.patch(
   SuperAdminController.rejectBulkOrderPayment,
 );
 
+router.get(
+  "/bulk-orders",
+  auth,
+  requireRole("ADMIN"),
+  SuperAdminController.getAllBulkOrders,
+);
+
 export default router;

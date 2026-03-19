@@ -23,6 +23,7 @@ const REDIRECT_URI = process.env.SHOPIFY_REDIRECT_URI;
 
 class DropshipperController {
   userPhoneColumnExists = null;
+  orderTableColumns = null;
 
   hasUnexpectedFields = (body, allowedFields) => {
     const keys = Object.keys(body || {});
@@ -113,6 +114,26 @@ class DropshipperController {
     }
 
     return configRow.setting_value;
+  };
+
+  getOrderTableColumns = async () => {
+    if (this.orderTableColumns) {
+      return this.orderTableColumns;
+    }
+
+    try {
+      const tableName = Order.getTableName();
+      const table =
+        typeof tableName === "string" ? tableName : tableName.tableName;
+      const definition = await Order.sequelize
+        .getQueryInterface()
+        .describeTable(table);
+      this.orderTableColumns = new Set(Object.keys(definition || {}));
+    } catch (error) {
+      this.orderTableColumns = new Set();
+    }
+
+    return this.orderTableColumns;
   };
 
   buildFileUrl = (req, fieldName) => {
@@ -445,17 +466,21 @@ class DropshipperController {
       const {
         productId,
         quantity,
-        gstRate,
-        ssnCode,
-        serviceAccountingCode,
-        userBusinessDetails,
-        checkoutDetails,
+        customerName,
+        customerPhone,
+        customerEmail,
+        deliveryAddress,
+        transactionReference,
+        paymentMode,
+        amount,
+        notes,
       } = req.body;
 
-      if (Number(quantity) < Number(config.minOrderQty)) {
+      const paymentScreenshot = this.buildFileUrl(req, "paymentScreenshot");
+      if (!paymentScreenshot) {
         return res.status(400).json({
           success: false,
-          error: `Minimum order quantity is ${config.minOrderQty}`,
+          error: "paymentScreenshot is required",
         });
       }
 
@@ -469,6 +494,18 @@ class DropshipperController {
           .json({ success: false, error: "Product not found" });
       }
 
+      // SUPPLIER-LEVEL SETTINGS: Fetch from product (set by supplier)
+      // minOrderQty: from product.minimum_order_quantity (supplier sets per product)
+      const productMinOrderQty = Number(product.minimum_order_quantity || 10);
+
+      if (Number(quantity) < productMinOrderQty) {
+        return res.status(400).json({
+          success: false,
+          error: `Minimum order quantity is ${productMinOrderQty}`,
+        });
+      }
+
+      // ADMIN-LEVEL SETTINGS: Fetch from platform config
       const defaultMarginPerPiece = new Decimal(
         config.defaultMarginPerPiece || 0,
       );
@@ -496,12 +533,13 @@ class DropshipperController {
           : Decimal.max(unitBulkPrice.minus(defaultMarginPerPiece), 0);
 
       const qty = new Decimal(quantity);
-      const applicableGstRate =
-        gstRate !== undefined && gstRate !== null
-          ? new Decimal(gstRate)
-          : new Decimal(config.defaultGstRate || 0);
 
-      const shippingAmount = new Decimal(config.defaultShippingCharge || 0);
+      // SUPPLIER-LEVEL SETTINGS: Get GST rate from product (set by supplier)
+      const applicableGstRate = new Decimal(product.gst_rate ?? 0.18);
+
+      // SUPPLIER-LEVEL SETTINGS: Get shipping charge from supplier profile (supplier sets globally or per product)
+      // TODO: Add default_shipping_charge field to suppliers table or fetch from product custom field
+      const shippingAmount = new Decimal(50); // Temporary default; should come from supplier profile
       const platformMarginPerPiece = Decimal.max(
         unitBulkPrice.minus(unitTransferPrice),
         0,
@@ -512,18 +550,6 @@ class DropshipperController {
       const supplierPayoutAmount = unitTransferPrice
         .mul(qty)
         .toDecimalPlaces(2);
-
-      const checkout = checkoutDetails || {};
-      const business = userBusinessDetails || {};
-      const customerName =
-        checkout.customerName || business.contactName || buyerUser.name;
-      const customerPhone =
-        checkout.customerPhone ||
-        business.contactPhone ||
-        buyerUser.phone_number ||
-        null;
-      const deliveryAddress =
-        checkout.deliveryAddress || business.billingAddress || null;
 
       const [resellerRecord] = await Reseller.findOrCreate({
         where: { user_id: buyerUser.user_id },
@@ -544,10 +570,8 @@ class DropshipperController {
       const pendingPaymentStatus =
         config?.statusFlow?.pendingPayment || "Pending Payment";
 
-      const order = await Order.create({
+      const orderPayload = {
         reseller_id: resellerRecord.reseller_id,
-        reseller_user_id: buyerUser.user_id,
-        supplier_id: product.supplier_id,
         product_id: product.product_id,
         order_type: "BULK",
         quantity: quantity,
@@ -559,9 +583,10 @@ class DropshipperController {
         total_payable: totalPayable.toFixed(2),
         total_amount: totalPayable.toFixed(2),
         invoice_number: invoiceNumber,
-        ssn_code: ssnCode,
-        service_accounting_code: serviceAccountingCode,
-        user_business_details: userBusinessDetails || checkoutDetails || null,
+        user_business_details: {
+          customerEmail: customerEmail || null,
+          notes: notes || null,
+        },
         customer_name: customerName,
         customer_phone: customerPhone,
         shipping_address: deliveryAddress,
@@ -571,37 +596,79 @@ class DropshipperController {
         supplier_payout_amount: supplierPayoutAmount.toFixed(2),
         supplier_payout_status: "PENDING_DELIVERY",
         supplier_payout_cycle: config?.settlement?.cycle || null,
-        payment_method: "DIRECT_BANK_TRANSFER",
-        payment_status: "PENDING",
+        payment_method: paymentMode === "upi" ? "UPI" : "DIRECT_BANK_TRANSFER",
+        payment_status: "PROOF_SUBMITTED",
+        transaction_reference: transactionReference,
         order_status: pendingPaymentStatus,
+      };
+
+      const orderColumns = await this.getOrderTableColumns();
+      if (orderColumns.has("supplier_id")) {
+        orderPayload.supplier_id = product.supplier_id;
+      }
+
+      const order = await Order.create(orderPayload);
+
+      const payableAmount = new Decimal(
+        amount ?? Number(order.total_payable || order.total_amount || 0),
+      ).toDecimalPlaces(2);
+
+      const payment = await Payment.create({
+        order_id: order.order_id,
+        payment_mode: paymentMode,
+        amount: Number(payableAmount.toString()),
+        payment_status: "initiated",
+        transaction_ref: transactionReference,
+        payment_screenshot_url: paymentScreenshot,
+        verification_status: "pending",
+        gateway: notes || null,
       });
 
       const companyBankDetails = await this.getPlatformPaymentAccountDetails();
+      const productPlain = product.get({ plain: true });
+      const productDetails = {
+        ...productPlain,
+        productId: productPlain.product_id,
+        supplierId: productPlain.supplier_id,
+        categoryId: productPlain.category_id,
+        bulkPrice: productPlain.bulk_price,
+        transferPrice: productPlain.transfer_price,
+        gstRate: productPlain.gst_rate,
+        minimumOrderQuantity: productPlain.minimum_order_quantity,
+        bulkPriceRefreshDays: productPlain.bulk_price_refresh_days,
+        approvalStatus: productPlain.approval_status,
+        lifecycleStatus: productPlain.lifecycle_status,
+      };
 
       return res.status(201).json({
         success: true,
         message:
-          "Bulk order created. Please upload payment proof after transferring the payment.",
+          "Bulk order submitted with payment proof. Awaiting admin verification.",
         data: {
           orderId: order.order_id,
           invoiceNumber: order.invoice_number,
-          productId: order.product_id,
+          productDetails: [productDetails],
           quantity: order.quantity,
+          customerName: order.customer_name,
+          customerPhone: order.customer_phone,
+          customerEmail: customerEmail || null,
+          deliveryAddress: order.shipping_address,
           unitBulkPrice: order.unit_bulk_price,
           subtotal: order.subtotal,
           shippingAmount: order.shipping_amount,
           gstRate: order.gst_rate,
           gstAmount: order.gst_amount,
           totalPayable: order.total_payable,
-          supplierTransferPrice: order.supplier_transfer_price,
-          platformMarginPerPiece: order.platform_margin_per_piece,
-          platformTotalMargin: order.platform_total_margin,
-          supplierPayoutAmount: order.supplier_payout_amount,
-          supplierPayoutStatus: order.supplier_payout_status,
-          ssnCode: order.ssn_code,
-          serviceAccountingCode: order.service_accounting_code,
           orderStatus: order.order_status,
           paymentStatus: order.payment_status,
+          transactionReference: order.transaction_reference,
+          paymentProof: {
+            paymentId: payment.payment_id,
+            paymentMode: payment.payment_mode,
+            amount: payment.amount,
+            screenshotUrl: payment.payment_screenshot_url,
+            verificationStatus: payment.verification_status,
+          },
           companyBankDetails,
         },
       });
@@ -639,78 +706,8 @@ class DropshipperController {
         data: {
           productId,
           supplierId: product.supplier_id,
-          minOrderQty: config.minOrderQty,
+          minOrderQty: Number(product.minimum_order_quantity || 10),
           companyBankDetails,
-        },
-      });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ success: false, error: error.message });
-    }
-  };
-
-  submitBulkOrderPaymentProof = async (req, res) => {
-    try {
-      const config = await this.getBulkOrderConfig();
-      const allowedRoles = config.allowRoles || ["RESELLER", "CUSTOMER"];
-      const buyerUser = await this.getAuthenticatedBuyer(req, allowedRoles);
-
-      if (!buyerUser) {
-        return res.status(401).json({ success: false, error: "Unauthorized" });
-      }
-
-      const { orderId } = req.params;
-      const { transactionReference, paymentMode, amount, notes } = req.body;
-
-      const order = await Order.findOne({
-        where: {
-          order_id: orderId,
-          order_type: "BULK",
-          reseller_user_id: buyerUser.user_id,
-        },
-      });
-
-      if (!order) {
-        return res
-          .status(404)
-          .json({ success: false, error: "Bulk order not found" });
-      }
-
-      const screenshotUrl = this.buildFileUrl(req, "paymentScreenshot");
-      if (!screenshotUrl) {
-        return res.status(400).json({
-          success: false,
-          error: "paymentScreenshot is required",
-        });
-      }
-
-      await Payment.create({
-        order_id: order.order_id,
-        payment_mode: paymentMode,
-        amount:
-          amount ?? Number(order.total_payable || order.total_amount || 0),
-        payment_status: "initiated",
-        transaction_ref: transactionReference,
-        payment_screenshot_url: screenshotUrl,
-        verification_status: "pending",
-        gateway: notes || null,
-      });
-
-      order.transaction_reference = transactionReference;
-      order.payment_status = "PROOF_SUBMITTED";
-      await order.save();
-
-      return res.status(200).json({
-        success: true,
-        message:
-          "Payment proof submitted successfully. Awaiting admin verification.",
-        data: {
-          orderId: order.order_id,
-          orderStatus: order.order_status,
-          paymentStatus: order.payment_status,
-          transactionReference,
-          paymentMode,
-          paymentScreenshot: screenshotUrl,
         },
       });
     } catch (error) {
