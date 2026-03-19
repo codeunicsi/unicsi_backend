@@ -1,4 +1,4 @@
-import { Supplier, ProductImage, Product, ProductVariant, Warehouse, Inventory, supplier_bank_details, supplier_gst_details, ProductOption, ProductOptionValue } from "../models/index.js";
+import { Supplier, ProductImage, Product, ProductVariant, Warehouse, Inventory, supplier_bank_details, supplier_gst_details, ProductOption, ProductOptionValue, Category } from "../models/index.js";
 import { Op } from "sequelize";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -404,14 +404,30 @@ export const add_products = async (req) => {
         description,
         brand,
         approval_status,
-        categoryId,
         options,
         variants,
       } = req.body;
-  
+      const categoryId = req.body.category_id ?? req.body.categoryId;
+
       options = parseJSON(options);
       variants = parseJSON(variants);
-  
+
+      /**
+       * CATEGORY VALIDATION (when provided)
+       */
+      if (categoryId != null && categoryId !== "") {
+        const category = await Category.findOne({
+          where: { id: categoryId, is_active: true },
+        });
+        if (!category) {
+          await transaction.rollback();
+          return {
+            success: false,
+            error: "Invalid or inactive category. Please choose an active category.",
+          };
+        }
+      }
+
       /**
        * BASIC VALIDATION
        */
@@ -457,7 +473,7 @@ export const add_products = async (req) => {
           description,
           brand,
           approval_status,
-          category_id: categoryId,
+          category_id: categoryId || null,
         },
         { transaction }
       );
@@ -664,8 +680,9 @@ export const update_product = async (req) => {
             return { success: false, error: "Product ID is required!" };
         }
 
-        const { title, description, brand, variants = [], images = [] } =
+        const { title, description, brand, variants = [], images = [], category_id: bodyCategoryId } =
                 req.body;
+        const categoryId = bodyCategoryId ?? req.body.categoryId;
 
         const product = await Product.findByPk(product_id);
 
@@ -673,7 +690,18 @@ export const update_product = async (req) => {
             return { success: false, error: "Product not found!" };
         }
 
-        await product.update({ title, description, brand });
+        if (categoryId != null && categoryId !== "") {
+            const category = await Category.findOne({
+                where: { id: categoryId, is_active: true },
+            });
+            if (!category) {
+                return { success: false, error: "Invalid or inactive category. Please choose an active category." };
+            }
+        }
+
+        const updatePayload = { title, description, brand };
+        if (categoryId !== undefined) updatePayload.category_id = categoryId || null;
+        await product.update(updatePayload);
 
         for (const variant of variants) {
             await ProductVariant.update(variant, { where: { variant_id: variant.variant_id,  } });
