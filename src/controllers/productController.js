@@ -87,7 +87,7 @@ export const myProducts = async (req, res) => {
   if (q) where.title = { [Op.iLike]: `%${q}%` };
   const data = await Product.findAndCountAll({
     where,
-    include: [{ model: ProductImage, as: "images" }, { model: Category }],
+    include: [{ model: ProductImage, as: "images" }, { model: Category, as: "category" }],
     limit: +limit,
     offset: (+page - 1) * +limit,
     order: [["createdAt", "DESC"]],

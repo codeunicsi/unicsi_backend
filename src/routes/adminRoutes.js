@@ -2,6 +2,25 @@ import express from "express";
 const router = express.Router();
 import SuperAdminController from "../controllers/superAdminController.js";
 import logisticsRoutes from "./logisticsRoutes.js";
+import { auth, requireRole } from "../middlewares/auth.js";
+import upload from "../middlewares/uploadMiddleware.js";
+import {
+  createCategory,
+  updateCategory,
+  deactivateCategory,
+  deleteCategoryPermanent,
+  uploadCategoryImage,
+} from "../controllers/categoryController.js";
+
+/** Multer wrapper so invalid file types return 400 JSON instead of 500 */
+const uploadSingleCategoryImage = (req, res, next) => {
+  upload.single("image")(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ success: false, message: err.message || "Invalid file" });
+    }
+    next();
+  });
+};
 
 router.get("/products/get-pending-products", SuperAdminController.getPendingProducts);
 router.get("/products/pending/stats", SuperAdminController.getPendingStats);
@@ -53,5 +72,18 @@ router.get("/payouts/wallet/stats", SuperAdminController.getWalletStats);
 router.get("/payouts/wallet", SuperAdminController.getWalletList);
 
 router.use("/logistics", logisticsRoutes);
+
+// Categories (Super Admin only) — static paths before :id
+router.post(
+  "/categories/upload-image",
+  auth,
+  requireRole("ADMIN"),
+  uploadSingleCategoryImage,
+  uploadCategoryImage
+);
+router.post("/categories", auth, requireRole("ADMIN"), createCategory);
+router.put("/categories/:id", auth, requireRole("ADMIN"), updateCategory);
+router.delete("/categories/:id/permanent", auth, requireRole("ADMIN"), deleteCategoryPermanent);
+router.delete("/categories/:id", auth, requireRole("ADMIN"), deactivateCategory);
 
 export default router;

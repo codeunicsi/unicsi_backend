@@ -27,6 +27,7 @@ import { AwbPool } from "./awb_pool.js";
 import { ProductOption } from './product_options.js'
 import { ProductOptionValue } from './product_option_values.js'
 import { Settlement } from "./settlements.js";
+import Category from "./Category.js";
 
 
 export {
@@ -59,4 +60,5 @@ export {
     ProductOption,
     ProductOptionValue,
     Settlement,
+    Category,
 }

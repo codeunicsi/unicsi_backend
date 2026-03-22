@@ -1,4 +1,4 @@
-import { Supplier, Product, ProductVariant, ProductImage, Warehouse, Inventory, SupplierPricing, Reseller, Order, NdrCase, supplier_gst_details, supplier_bank_details, SupplierKyc, CourierPartner, CourierServiceability, CourierRateCard, AwbPool } from "../models/index.js";
+import { Supplier, Product, ProductVariant, ProductImage, Warehouse, Inventory, SupplierPricing, Reseller, Order, NdrCase, supplier_gst_details, supplier_bank_details, SupplierKyc, CourierPartner, CourierServiceability, CourierRateCard, AwbPool, Category } from "../models/index.js";
 import User from "../models/User.js";
 
 /* ===========================
@@ -24,6 +24,14 @@ Product.belongsTo(Supplier, {
     foreignKey: "supplier_id",
     as: "supplier",
 });
+
+// Product → Category (no DB FK constraint so sync works if products.category_id was previously integer)
+Product.belongsTo(Category, { foreignKey: "category_id", as: "category", targetKey: "id", constraints: false });
+Category.hasMany(Product, { foreignKey: "category_id", constraints: false });
+
+// Category self-reference (parent/child)
+Category.belongsTo(Category, { as: "parent", foreignKey: "parent_id" });
+Category.hasMany(Category, { as: "children", foreignKey: "parent_id" });
 
 // Product → Variant
 Product.hasMany(ProductVariant, {
