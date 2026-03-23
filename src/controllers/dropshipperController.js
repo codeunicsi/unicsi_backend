@@ -572,13 +572,13 @@ class DropshipperController {
 
       const orderPayload = {
         reseller_id: resellerRecord.reseller_id,
-        product_id: product.product_id,
+        // product_id: product.product_id,
         order_type: "BULK",
         quantity: quantity,
-        unit_bulk_price: unitBulkPrice.toFixed(2),
+        // unit_bulk_price: unitBulkPrice.toFixed(2),
         subtotal: subtotal.toFixed(2),
         shipping_amount: shippingAmount.toFixed(2),
-        gst_rate: applicableGstRate.toFixed(4),
+        // gst_rate: applicableGstRate.toFixed(4),
         gst_amount: gstAmount.toFixed(2),
         total_payable: totalPayable.toFixed(2),
         total_amount: totalPayable.toFixed(2),
@@ -590,7 +590,7 @@ class DropshipperController {
         customer_name: customerName,
         customer_phone: customerPhone,
         shipping_address: deliveryAddress,
-        supplier_transfer_price: unitTransferPrice.toFixed(2),
+        // supplier_transfer_price: unitTransferPrice.toFixed(2),
         platform_margin_per_piece: platformMarginPerPiece.toFixed(2),
         platform_total_margin: platformTotalMargin.toFixed(2),
         supplier_payout_amount: supplierPayoutAmount.toFixed(2),
@@ -600,6 +600,7 @@ class DropshipperController {
         payment_status: "PROOF_SUBMITTED",
         transaction_reference: transactionReference,
         order_status: pendingPaymentStatus,
+        orderDetails: [product],
       };
 
       const orderColumns = await this.getOrderTableColumns();

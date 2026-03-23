@@ -24,10 +24,10 @@ export const Order = sequelize.define(
       allowNull: true,
     },
 
-    product_id: {
-      type: DataTypes.UUID,
-      allowNull: true,
-    },
+    // product_id: {
+    //   type: DataTypes.UUID,
+    //   allowNull: true,
+    // },
 
     order_type: {
       type: DataTypes.STRING,
@@ -40,10 +40,10 @@ export const Order = sequelize.define(
       allowNull: true,
     },
 
-    supplier_transfer_price: {
-      type: DataTypes.DECIMAL(12, 2),
-      allowNull: true,
-    },
+    // supplier_transfer_price: {
+    //   type: DataTypes.DECIMAL(12, 2),
+    //   allowNull: true,
+    // },
 
     platform_margin_per_piece: {
       type: DataTypes.DECIMAL(12, 2),
@@ -81,20 +81,20 @@ export const Order = sequelize.define(
       allowNull: true,
     },
 
-    unit_bulk_price: {
-      type: DataTypes.DECIMAL(12, 2),
-      allowNull: true,
-    },
+    // unit_bulk_price: {
+    //   type: DataTypes.DECIMAL(12, 2),
+    //   allowNull: true,
+    // },
 
     subtotal: {
       type: DataTypes.DECIMAL(12, 2),
       allowNull: true,
     },
 
-    gst_rate: {
-      type: DataTypes.DECIMAL(5, 4),
-      allowNull: true,
-    },
+    // gst_rate: {
+    //   type: DataTypes.DECIMAL(5, 4),
+    //   allowNull: true,
+    // },
 
     gst_amount: {
       type: DataTypes.DECIMAL(12, 2),
@@ -151,6 +151,11 @@ export const Order = sequelize.define(
 
     payment_verified_by: {
       type: DataTypes.UUID,
+      allowNull: true,
+    },
+
+    orderDetails: {
+      type: DataTypes.JSONB,
       allowNull: true,
     },
 
