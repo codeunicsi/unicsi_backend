@@ -21,5 +21,4 @@ router.use("/admin", adminRoutes);
 //dropshipper
 router.use("/dropshipper", dropshipperRoutes);
 
-
 export default router;

@@ -286,3 +286,23 @@ export const bulkOrderConfigSchema = Joi.object({
     dayOfWeek: Joi.number().integer().min(0).max(6).optional(),
   }).required(),
 });
+
+// Admin only for bank detail schema
+
+export const adminBankDetailsCreateSchema = Joi.object({
+  accountHolderName: Joi.string().trim().min(2).max(150).required(),
+  accountNumber: Joi.string().trim().min(6).max(40).required(),
+  ifscCode: Joi.string().trim().min(4).max(20).required(),
+  bankName: Joi.string().trim().min(2).max(150).required(),
+  upiId: Joi.string().trim().max(150).required(),
+  qrCode: Joi.string().trim().uri().optional().allow("", null),
+});
+
+export const adminBankDetailsPatchSchema = Joi.object({
+  accountHolderName: Joi.string().trim().min(2).max(150).optional(),
+  accountNumber: Joi.string().trim().min(6).max(40).optional(),
+  ifscCode: Joi.string().trim().min(4).max(20).optional(),
+  bankName: Joi.string().trim().min(2).max(150).optional(),
+  upiId: Joi.string().trim().max(150).optional(),
+  qrCode: Joi.string().trim().uri().optional().allow("", null),
+}).min(1);

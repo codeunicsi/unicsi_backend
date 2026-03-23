@@ -125,6 +125,13 @@ router.get(
   DropshipperController.getBulkOrderBankDetails,
 );
 
+router.get(
+  "/admin/bank-details",
+  auth,
+  requireRole("RESELLER"),
+  DropshipperController.getAdminBankDetails,
+);
+
 router.post(
   "/source-requests",
   auth,

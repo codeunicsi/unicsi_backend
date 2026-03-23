@@ -24,6 +24,7 @@ import { User } from "./User.js";
 import { Payment } from "./payments.js";
 import { PlatformSetting } from "./platform_settings.js";
 import { DropshipperSourceRequest } from "./dropshipper_source_requests.js";
+import { admin_bank_details } from "./admin_bank_details.js";
 
 export {
   Supplier,
@@ -52,4 +53,5 @@ export {
   Payment,
   PlatformSetting,
   DropshipperSourceRequest,
+  admin_bank_details,
 };

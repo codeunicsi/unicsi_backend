@@ -74,11 +74,7 @@ router.get(
   auth,
   supplierController.get_submitted_source_requests,
 );
-router.get(
-  "/bulk-orders",
-  auth,
-  supplierController.get_supplier_bulk_orders,
-);
+router.get("/bulk-orders", auth, supplierController.get_supplier_bulk_orders);
 router.get(
   "/stores/products/:product_id",
   auth,
@@ -146,6 +142,12 @@ router.delete(
   "/stores/inventory/:sku",
   auth,
   supplierController.delete_inventory,
+);
+
+router.get(
+  "/admin/bank-details",
+  auth,
+  supplierController.get_admin_bank_details,
 );
 
 // router.post("/stores/uploadProducts", supplierController.supplier_products);

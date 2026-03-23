@@ -17,6 +17,8 @@ import {
   getRejectedProducts,
   getRejectedStats,
   deleteOrResubmitRejectedProduct,
+  createAdminBankDetails as createAdminBankDetailsFn,
+  updateAdminBankDetails as updateAdminBankDetailsFn,
 } from "../utils/adminFunc.js";
 import { Order, Payment, PlatformSetting, Product } from "../models/index.js";
 
@@ -577,6 +579,37 @@ class SuperAdminController {
         success: false,
         error: "Failed to reject bulk order payment",
       });
+    }
+  };
+
+  // createAdmin Bank detail + updateAdmin Bank detail
+  createAdminBankDetails = async (req, res) => {
+    try {
+      const result = await createAdminBankDetailsFn(req);
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error("Error creating admin bank details:", error);
+      return res
+        .status(500)
+        .json({ error: "Failed to create admin bank details" });
+    }
+  };
+
+  updateAdminBankDetails = async (req, res) => {
+    try {
+      const result = await updateAdminBankDetailsFn(req);
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error("Error updating admin bank details:", error);
+      return res
+        .status(500)
+        .json({ error: "Failed to update admin bank details" });
     }
   };
 }

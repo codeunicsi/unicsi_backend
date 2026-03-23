@@ -5,11 +5,10 @@ import dotenv from "dotenv";
 import sequelize, { connectDB } from "./config/database.js";
 import path from "path";
 import { fileURLToPath } from "url";
-import('../src/config/association.js')
+import("../src/config/association.js");
 import cookieParser from "cookie-parser";
 import session from "express-session";
 // import uploadRoutes from "./routes/upload.js";
-
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,19 +33,17 @@ const app = express();
    
 */
 
-
 app.use(
   cors({
     origin: [
       process.env.FRONTEND_URL1,
-      process.env.FRONTEND_URL2, 
+      process.env.FRONTEND_URL2,
       process.env.FRONTEND_URL3,
       process.env.FRONTEND_URL4,
-
     ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
-  })
+  }),
 );
 
 // Enable JSON parsing for incoming requests
@@ -64,14 +61,16 @@ sequelize
   .then(() => console.log("✅ Models synced with database"))
   .catch((err) => console.error("❌ Error syncing models:", err.message));
 
-app.use(session({
+app.use(
+  session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: true,
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, // 1 day
     },
-  }));
+  }),
+);
 
 // Mount routes (handles all /api/auth/... and other endpoints)
 
@@ -81,29 +80,29 @@ app.use("/api/v1/", routes);
 
 // Basic test route
 app.get("/health", (req, res) => {
-    res.status(200).json({
-    status: 'OK',
+  res.status(200).json({
+    status: "OK",
     timestamp: new Date().toISOString(),
-    service: 'Unicsi Backend API',
-  })
+    service: "Unicsi Backend API",
+  });
 });
 
 //not found route
 app.use((req, res) => {
   res.status(404).json({
-    status: 'error',
-    message: 'Route not found',
-  })
-})
+    status: "error",
+    message: "Route not found",
+  });
+});
 
 //error handler
 app.use((err, req, res, next) => {
-  console.error(err.stack)
+  console.error(err.stack);
   res.status(500).json({
-    status: 'error',
-    message: 'Internal server error',
-  })
-})
+    status: "error",
+    message: "Internal server error",
+  });
+});
 
 // Start Express server
 const PORT = process.env.PORT || 5000;

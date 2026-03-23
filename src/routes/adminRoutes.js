@@ -6,6 +6,8 @@ import {
   validateWithJoi,
   bulkOrderConfigSchema,
   bulkOrderPaymentRejectSchema,
+  adminBankDetailsCreateSchema,
+  adminBankDetailsPatchSchema,
 } from "../utils/constant.js";
 
 router.get(
@@ -88,6 +90,22 @@ router.get(
   auth,
   requireRole("ADMIN"),
   SuperAdminController.getAllBulkOrders,
+);
+
+router.post(
+  "/bank-details",
+  auth,
+  requireRole("ADMIN"),
+  validateWithJoi(adminBankDetailsCreateSchema),
+  SuperAdminController.createAdminBankDetails,
+);
+
+router.patch(
+  "/bank-details",
+  auth,
+  requireRole("ADMIN"),
+  validateWithJoi(adminBankDetailsPatchSchema),
+  SuperAdminController.updateAdminBankDetails,
 );
 
 export default router;

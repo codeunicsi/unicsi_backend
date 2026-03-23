@@ -30,6 +30,7 @@ import {
   get_submitted_source_requests,
   get_supplier_bulk_orders,
 } from "../utils/supplierFnc.js";
+import { getAdminBankDetailsForSupplier } from "../utils/adminFunc.js";
 
 class SupplierController {
   async supplier_register(req, res) {
@@ -347,6 +348,15 @@ class SupplierController {
   async supplier_personal_details(req, res) {
     try {
       const result = await updatePersonalDetails(req);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  async get_admin_bank_details(req, res) {
+    try {
+      const result = await getAdminBankDetailsForSupplier();
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: error.message });

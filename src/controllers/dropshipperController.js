@@ -15,6 +15,7 @@ import {
 import crypto from "crypto";
 import axios from "axios";
 import Decimal from "decimal.js";
+import { getAdminBankDetailsForSupplier } from "../utils/adminFunc.js";
 
 const API_KEY = process.env.SHOPIFY_API_KEY;
 const API_SECRET = process.env.SHOPIFY_API_SECRET;
@@ -323,6 +324,27 @@ class DropshipperController {
         user_id: user.user_id,
         store_id: user.user_id,
       });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  };
+
+  getAdminBankDetails = async (req, res) => {
+    try {
+      const user = await this.getAuthenticatedReseller(req);
+
+      if (!user) {
+        return res.status(401).json({ success: false, error: "Unauthorized" });
+      }
+
+      const result = await getAdminBankDetailsForSupplier();
+
+      if (!result.success) {
+        return res.status(404).json(result);
+      }
+
+      return res.status(200).json(result);
     } catch (error) {
       console.error(error);
       return res.status(500).json({ success: false, error: error.message });
