@@ -23,5 +23,4 @@ router.use("/categories", categoryRoutes);
 //dropshipper
 router.use("/dropshipper", dropshipperRoutes);
 
-
 export default router;

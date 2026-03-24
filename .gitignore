@@ -2,3 +2,7 @@ node_modules
 .env
 uploads
 ca.pem
+postman
+docs
+scripts
+tests

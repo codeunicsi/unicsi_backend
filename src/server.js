@@ -5,11 +5,10 @@ import dotenv from "dotenv";
 import sequelize, { connectDB } from "./config/database.js";
 import path from "path";
 import { fileURLToPath } from "url";
-import('../src/config/association.js')
+import("../src/config/association.js");
 import cookieParser from "cookie-parser";
 import session from "express-session";
 // import uploadRoutes from "./routes/upload.js";
-
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,19 +34,17 @@ const app = express();
    
 */
 
-
 app.use(
   cors({
     origin: [
       process.env.FRONTEND_URL1,
-      process.env.FRONTEND_URL2, 
+      process.env.FRONTEND_URL2,
       process.env.FRONTEND_URL3,
       process.env.FRONTEND_URL4,
-
     ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
-  })
+  }),
 );
 
 // Enable JSON parsing for incoming requests
@@ -82,8 +79,8 @@ app.get("/health", (req, res) => {
   res.status(200).json({
     status: 'OK',
     timestamp: new Date().toISOString(),
-    service: 'Unicsi Backend API',
-  })
+    service: "Unicsi Backend API",
+  });
 });
 
 // not found route
@@ -96,7 +93,7 @@ app.use((req, res) => {
 
 // error handler
 app.use((err, req, res, next) => {
-  console.error(err.stack)
+  console.error(err.stack);
   res.status(500).json({
     status: 'error',
     message: 'Internal server error',

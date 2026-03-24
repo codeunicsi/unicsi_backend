@@ -139,11 +139,7 @@ export const login = async (req, res) => {
       payload.supplierId = supplier.supplier_id;
     }
 
-    if (user.role === "ADMIN") {
-      payload.userId = user.user_id;
-    }
-
-    if (user.role === "RESELLER") {
+    if (["ADMIN", "RESELLER", "CUSTOMER"].includes(user.role)) {
       payload.userId = user.user_id;
     }
 

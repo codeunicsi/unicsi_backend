@@ -19,82 +19,91 @@ export const Order = sequelize.define(
       },
     },
 
+    reseller_user_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
+
     supplier_id: {
       type: DataTypes.UUID,
       allowNull: true,
     },
 
-    // product_id: {
-    //   type: DataTypes.UUID,
-    //   allowNull: true,
-    // },
+    product_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
 
     order_type: {
-      type: DataTypes.STRING,
+      type: DataTypes.ENUM("STANDARD", "BULK"),
       allowNull: false,
       defaultValue: "STANDARD",
     },
 
     quantity: {
       type: DataTypes.INTEGER,
+      supplier_transfer_price: {
+        type: DataTypes.DECIMAL(12, 2),
+        allowNull: true,
+      },
+
+      platform_margin_per_piece: {
+        type: DataTypes.DECIMAL(12, 2),
+        allowNull: true,
+      },
+
+      platform_total_margin: {
+        type: DataTypes.DECIMAL(12, 2),
+        allowNull: true,
+      },
+
+      supplier_payout_amount: {
+        type: DataTypes.DECIMAL(12, 2),
+        allowNull: true,
+      },
+
+      supplier_payout_status: {
+        type: DataTypes.ENUM(
+          "PENDING_DELIVERY",
+          "READY_FOR_SETTLEMENT",
+          "SCHEDULED",
+          "PAID",
+        ),
+        allowNull: true,
+        defaultValue: "PENDING_DELIVERY",
+      },
+
+      supplier_payout_cycle: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+
+      supplier_payout_due_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+
+      supplier_payout_processed_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
       allowNull: true,
     },
 
-    // supplier_transfer_price: {
-    //   type: DataTypes.DECIMAL(12, 2),
-    //   allowNull: true,
-    // },
-
-    platform_margin_per_piece: {
+    unit_bulk_price: {
       type: DataTypes.DECIMAL(12, 2),
       allowNull: true,
     },
-
-    platform_total_margin: {
-      type: DataTypes.DECIMAL(12, 2),
-      allowNull: true,
-    },
-
-    supplier_payout_amount: {
-      type: DataTypes.DECIMAL(12, 2),
-      allowNull: true,
-    },
-
-    supplier_payout_status: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      defaultValue: "PENDING_DELIVERY",
-    },
-
-    supplier_payout_cycle: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-
-    supplier_payout_due_at: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    },
-
-    supplier_payout_processed_at: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    },
-
-    // unit_bulk_price: {
-    //   type: DataTypes.DECIMAL(12, 2),
-    //   allowNull: true,
-    // },
 
     subtotal: {
       type: DataTypes.DECIMAL(12, 2),
       allowNull: true,
     },
 
-    // gst_rate: {
-    //   type: DataTypes.DECIMAL(5, 4),
-    //   allowNull: true,
-    // },
+    gst_rate: {
+      type: DataTypes.DECIMAL(5, 4),
+      allowNull: true,
+    },
 
     gst_amount: {
       type: DataTypes.DECIMAL(12, 2),
@@ -154,13 +163,13 @@ export const Order = sequelize.define(
       allowNull: true,
     },
 
-    orderDetails: {
-      type: DataTypes.JSONB,
-      allowNull: true,
-    },
-
     payment_status: {
-      type: DataTypes.STRING,
+      type: DataTypes.ENUM(
+        "PENDING",
+        "PROOF_SUBMITTED",
+        "VERIFIED",
+        "REJECTED",
+      ),
       allowNull: false,
       defaultValue: "PENDING",
     },

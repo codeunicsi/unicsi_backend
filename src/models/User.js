@@ -21,14 +21,14 @@ export const User = sequelize.define("User", {
   },
   phone_number: {
     type: DataTypes.STRING,
-    allowNull: true
+    allowNull: true,
   },
   password: {
     type: DataTypes.STRING,
     allowNull: false,
   },
   role: {
-    type: DataTypes.ENUM("ADMIN", "SUPPLIER", "RESELLER"),
+    type: DataTypes.ENUM("ADMIN", "SUPPLIER", "RESELLER", "CUSTOMER"),
     allowNull: false,
   },
   status: {

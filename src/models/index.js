@@ -13,10 +13,12 @@ import { ProductReviewLog } from "./product_review_logs.js";
 import { Reseller } from "./resellers.js";
 import { NdrCase } from "./ndr_cases.js";
 import { LedgerEntry } from "./ledger_entries.js";
-import { Order } from "./Order.js";
+import { Order } from "./order.js";
 import { OrderStatusHistory } from "./order_status_history.js";
 import { supplier_bank_details } from "./supplier_bank_details.js";
 import { supplier_gst_details } from "./supplier_gst_details.js";
+import { reseller_bank_details } from "./reseller_bank_details.js";
+import { reseller_gst_details } from "./reseller_gst_details.js";
 import { ShopifyStore } from "./shopify_store.js";
 import { User } from "./User.js";
 import { CourierPartner } from "./courier_partners.js";
@@ -29,6 +31,11 @@ import { ProductOptionValue } from './product_option_values.js'
 import { Settlement } from "./settlements.js";
 import { PlatformCollectionAccount } from "./platform_collection_account.js";
 import Category from "./Category.js";
+import { Payment } from "./payments.js";
+import { PlatformSetting } from "./platform_settings.js";
+import { DropshipperSourceRequest } from "./dropshipper_source_requests.js";
+import { admin_bank_details } from "./admin_bank_details.js";
+
 
 
 export {
@@ -63,4 +70,8 @@ export {
     Settlement,
     PlatformCollectionAccount,
     Category,
+    DropshipperSourceRequest,
+    admin_bank_details,
+    Payment,
+    PlatformSetting
 }
