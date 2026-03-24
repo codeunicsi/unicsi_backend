@@ -77,7 +77,8 @@ app.use(session({
 
 app.use("/api/v1/", routes);
 // app.use("/api/v1", uploadRoutes);
-// app.use("/uploads", express.static("uploads"));
+const uploadsStaticRoot = path.join(process.cwd(), "uploads");
+app.use("/uploads", express.static(uploadsStaticRoot));
 
 // Basic test route
 app.get("/health", (req, res) => {

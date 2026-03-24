@@ -2,6 +2,7 @@ import express from "express";
 const router = express.Router();
 import SuperAdminController from "../controllers/superAdminController.js";
 import logisticsRoutes from "./logisticsRoutes.js";
+import upload from "../middlewares/uploadMiddleware.js";
 
 router.get("/products/get-pending-products", SuperAdminController.getPendingProducts);
 router.get("/products/pending/stats", SuperAdminController.getPendingStats);
@@ -51,6 +52,17 @@ router.get("/payouts/transactions", SuperAdminController.getTransactionList);
 // payouts - wallet management
 router.get("/payouts/wallet/stats", SuperAdminController.getWalletStats);
 router.get("/payouts/wallet", SuperAdminController.getWalletList);
+
+// platform manual payment (UPI / bank) — shown to suppliers; configured here
+router.get("/platform-collection-account", SuperAdminController.getPlatformCollectionAccount);
+router.put("/platform-collection-account", SuperAdminController.updatePlatformCollectionAccount);
+router.delete("/platform-collection-account", SuperAdminController.deletePlatformCollectionAccount);
+router.post(
+    "/platform-collection-account/qr",
+    upload.single("qrCode"),
+    SuperAdminController.uploadPlatformCollectionQr
+);
+router.delete("/platform-collection-account/qr", SuperAdminController.deletePlatformCollectionQr);
 
 router.use("/logistics", logisticsRoutes);
 

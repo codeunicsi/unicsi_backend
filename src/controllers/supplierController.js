@@ -1,4 +1,5 @@
 import { signup, login, profile, signup_send_otp, add_bank_details, add_gst_details, getAllSupplier, add_products, add_product_variants, add_product_images, create_warehouse, update_warehouse, get_warehouse, delete_warehouse, create_inventory, update_inventory_stock, get_inventory, delete_inventory, get_inventory_by_filter, logout, updatePersonalDetails, get_bank_account_details, update_bank_details, get_gst_details, get_products, get_single_product, update_product } from "../utils/supplierFnc.js";
+import { getPlatformCollectionAccount } from "../utils/platformCollectionAccount.js";
 
 
 class SupplierController {
@@ -114,6 +115,19 @@ class SupplierController {
             res.json(result);
         } catch (error) {
             res.status(500).json({ error: error.message });
+        }
+    }
+
+    /** Where to pay Unicsi (UPI / bank) for manual top-ups — same data superadmin configures. */
+    async get_platform_payment_details(req, res) {
+        try {
+            const result = await getPlatformCollectionAccount();
+            if (!result.success) {
+                return res.status(400).json(result);
+            }
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(500).json({ success: false, message: error.message });
         }
     }
 

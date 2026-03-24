@@ -1,4 +1,11 @@
 import { getPendingProducts, getPendingStats, getProductById, approveProduct as approveProductFn, rejectProduct as rejectProductFn, modifiedProducts as modifiedProductsFn, updateProduct as updateProductAdmin, getAllSupplier, supplierKycVerification, verifySupplier, rejectSupplierProof, getLiveProducts, getLiveProductsStats, updateLiveProductStatus as updateLiveProductStatusFn, archiveLiveProduct, getRejectedProducts, getRejectedStats, deleteOrResubmitRejectedProduct, getSupplierPayoutStats, getSupplierPayoutList, getPartnerPayoutStats, getPartnerPayoutList, getSettlementStats, getSettlementList, getTransactionStats, getTransactionList, getWalletStats, getWalletList } from "../utils/adminFunc.js";
+import {
+    getPlatformCollectionAccount,
+    upsertPlatformCollectionAccount,
+    setPlatformCollectionQrFromUpload,
+    clearPlatformCollectionQr,
+    deletePlatformCollectionAccount as destroyPlatformCollectionAccount,
+} from "../utils/platformCollectionAccount.js";
 
 
 
@@ -320,6 +327,61 @@ class SuperAdminController {
         } catch (error) {
             console.error("Error fetching wallet list:", error);
             res.status(500).json({ error: "Failed to fetch wallet list" });
+        }
+    };
+
+    getPlatformCollectionAccount = async (_req, res) => {
+        try {
+            const result = await getPlatformCollectionAccount();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching platform collection account:", error);
+            res.status(500).json({ success: false, message: "Failed to fetch platform payment details" });
+        }
+    };
+
+    updatePlatformCollectionAccount = async (req, res) => {
+        try {
+            const result = await upsertPlatformCollectionAccount(req.body);
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error updating platform collection account:", error);
+            res.status(500).json({ success: false, message: "Failed to update platform payment details" });
+        }
+    };
+
+    uploadPlatformCollectionQr = async (req, res) => {
+        try {
+            const result = await setPlatformCollectionQrFromUpload(req);
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error uploading platform QR:", error);
+            res.status(500).json({ success: false, message: "Failed to upload QR image" });
+        }
+    };
+
+    deletePlatformCollectionQr = async (_req, res) => {
+        try {
+            const result = await clearPlatformCollectionQr();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error clearing platform QR:", error);
+            res.status(500).json({ success: false, message: "Failed to remove QR image" });
+        }
+    };
+
+    deletePlatformCollectionAccount = async (_req, res) => {
+        try {
+            const result = await destroyPlatformCollectionAccount();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error deleting platform collection account:", error);
+            res.status(500).json({ success: false, message: "Failed to delete platform payment details" });
         }
     };
 }
