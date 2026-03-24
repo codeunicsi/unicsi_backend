@@ -71,6 +71,17 @@ router.get("/payouts/transactions", SuperAdminController.getTransactionList);
 router.get("/payouts/wallet/stats", SuperAdminController.getWalletStats);
 router.get("/payouts/wallet", SuperAdminController.getWalletList);
 
+// platform manual payment (UPI / bank) — shown to suppliers; configured here
+router.get("/platform-collection-account", SuperAdminController.getPlatformCollectionAccount);
+router.put("/platform-collection-account", SuperAdminController.updatePlatformCollectionAccount);
+router.delete("/platform-collection-account", SuperAdminController.deletePlatformCollectionAccount);
+router.post(
+    "/platform-collection-account/qr",
+    upload.single("qrCode"),
+    SuperAdminController.uploadPlatformCollectionQr
+);
+router.delete("/platform-collection-account/qr", SuperAdminController.deletePlatformCollectionQr);
+
 router.use("/logistics", logisticsRoutes);
 
 // Categories (Super Admin only) — static paths before :id

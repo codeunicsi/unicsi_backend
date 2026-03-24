@@ -15,6 +15,9 @@ router.post("/logout", supplierController.supplier_logout);
 router.get("/profile/personalDetails", auth, supplierController.supplier_profile);
 router.put("/profile/personalDetails", auth, supplierController.supplier_personal_details);
 
+// platform payment instructions (wallet / manual pay to Unicsi)
+router.get("/platform-payment-details", auth, supplierController.get_platform_payment_details);
+
 //bank account
 router.get("/stores/bankAccountDetails", auth, supplierController.get_bank_account_details);
 router.post("/stores/bankAccountDetails", auth, supplierController.supplier_bank_account_details);
