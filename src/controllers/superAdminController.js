@@ -1,26 +1,12 @@
+import { getPendingProducts, getPendingStats, getProductById, approveProduct as approveProductFn, rejectProduct as rejectProductFn, modifiedProducts as modifiedProductsFn, updateProduct as updateProductAdmin, getAllSupplier, supplierKycVerification, verifySupplier, rejectSupplierProof, getLiveProducts, getLiveProductsStats, updateLiveProductStatus as updateLiveProductStatusFn, archiveLiveProduct, getRejectedProducts, getRejectedStats, deleteOrResubmitRejectedProduct, getSupplierPayoutStats, getSupplierPayoutList, getPartnerPayoutStats, getPartnerPayoutList, getSettlementStats, getSettlementList, getTransactionStats, getTransactionList, getWalletStats, getWalletList, createAdminBankDetails as createAdminBankDetailsFn,
+  updateAdminBankDetails as updateAdminBankDetailsFn } from "../utils/adminFunc.js";
 import {
-  getPendingProducts,
-  getPendingStats,
-  getProductById,
-  approveProduct as approveProductFn,
-  rejectProduct as rejectProductFn,
-  modifiedProducts as modifiedProductsFn,
-  updateProduct as updateProductAdmin,
-  getAllSupplier,
-  supplierKycVerification,
-  verifySupplier,
-  rejectSupplierProof,
-  getLiveProducts,
-  getLiveProductsStats,
-  updateLiveProductStatus as updateLiveProductStatusFn,
-  archiveLiveProduct,
-  getRejectedProducts,
-  getRejectedStats,
-  deleteOrResubmitRejectedProduct,
-  createAdminBankDetails as createAdminBankDetailsFn,
-  updateAdminBankDetails as updateAdminBankDetailsFn,
-} from "../utils/adminFunc.js";
-import { Order, Payment, PlatformSetting, Product } from "../models/index.js";
+    getPlatformCollectionAccount,
+    upsertPlatformCollectionAccount,
+    setPlatformCollectionQrFromUpload,
+    clearPlatformCollectionQr,
+    deletePlatformCollectionAccount as destroyPlatformCollectionAccount,
+} from "../utils/platformCollectionAccount.js";
 
 class SuperAdminController {
   getAllBulkOrders = async (req, res) => {
@@ -612,6 +598,170 @@ class SuperAdminController {
         .json({ error: "Failed to update admin bank details" });
     }
   };
+    getSupplierPayoutStats = async (_req, res) => {
+        try {
+            const result = await getSupplierPayoutStats();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching supplier payout stats:", error);
+            res.status(500).json({ error: "Failed to fetch payout stats" });
+        }
+    };
+
+    getSupplierPayoutList = async (_req, res) => {
+        try {
+            const result = await getSupplierPayoutList();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching supplier payout list:", error);
+            res.status(500).json({ error: "Failed to fetch payout list" });
+        }
+    };
+
+    getPartnerPayoutStats = async (_req, res) => {
+        try {
+            const result = await getPartnerPayoutStats();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching partner payout stats:", error);
+            res.status(500).json({ error: "Failed to fetch payout stats" });
+        }
+    };
+
+    getPartnerPayoutList = async (_req, res) => {
+        try {
+            const result = await getPartnerPayoutList();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching partner payout list:", error);
+            res.status(500).json({ error: "Failed to fetch payout list" });
+        }
+    };
+
+    getSettlementStats = async (_req, res) => {
+        try {
+            const result = await getSettlementStats();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching settlement stats:", error);
+            res.status(500).json({ error: "Failed to fetch settlement stats" });
+        }
+    };
+
+    getSettlementList = async (req, res) => {
+        try {
+            const result = await getSettlementList(req);
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching settlement list:", error);
+            res.status(500).json({ error: "Failed to fetch settlement list" });
+        }
+    };
+
+    getTransactionStats = async (_req, res) => {
+        try {
+            const result = await getTransactionStats();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching transaction stats:", error);
+            res.status(500).json({ error: "Failed to fetch transaction stats" });
+        }
+    };
+
+    getTransactionList = async (req, res) => {
+        try {
+            const result = await getTransactionList(req);
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching transaction list:", error);
+            res.status(500).json({ error: "Failed to fetch transaction list" });
+        }
+    };
+
+    getWalletStats = async (_req, res) => {
+        try {
+            const result = await getWalletStats();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching wallet stats:", error);
+            res.status(500).json({ error: "Failed to fetch wallet stats" });
+        }
+    };
+
+    getWalletList = async (_req, res) => {
+        try {
+            const result = await getWalletList();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching wallet list:", error);
+            res.status(500).json({ error: "Failed to fetch wallet list" });
+        }
+    };
+
+    getPlatformCollectionAccount = async (_req, res) => {
+        try {
+            const result = await getPlatformCollectionAccount();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error fetching platform collection account:", error);
+            res.status(500).json({ success: false, message: "Failed to fetch platform payment details" });
+        }
+    };
+
+    updatePlatformCollectionAccount = async (req, res) => {
+        try {
+            const result = await upsertPlatformCollectionAccount(req.body);
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error updating platform collection account:", error);
+            res.status(500).json({ success: false, message: "Failed to update platform payment details" });
+        }
+    };
+
+    uploadPlatformCollectionQr = async (req, res) => {
+        try {
+            const result = await setPlatformCollectionQrFromUpload(req);
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error uploading platform QR:", error);
+            res.status(500).json({ success: false, message: "Failed to upload QR image" });
+        }
+    };
+
+    deletePlatformCollectionQr = async (_req, res) => {
+        try {
+            const result = await clearPlatformCollectionQr();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error clearing platform QR:", error);
+            res.status(500).json({ success: false, message: "Failed to remove QR image" });
+        }
+    };
+
+    deletePlatformCollectionAccount = async (_req, res) => {
+        try {
+            const result = await destroyPlatformCollectionAccount();
+            if (!result.success) return res.status(400).json(result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error("Error deleting platform collection account:", error);
+            res.status(500).json({ success: false, message: "Failed to delete platform payment details" });
+        }
+    };
 }
 
 export default new SuperAdminController();

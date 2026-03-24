@@ -1,19 +1,30 @@
 import { Op } from "sequelize";
-import {Product, ProductImage} from "../models/index.js";
-// import { ProductImage } from "../models/index.js";
+import { Product, ProductImage, ProductVariant } from "../models/index.js";
 import Category from "../models/Category.js";
 import SellerListing from "../models/SellerListing.js";
 
 // Public marketplace (approved products)
 export const listMarketplaceProducts = async (req, res) => {
   const { q, categoryId, page = 1, limit = 20 } = req.query;
-  const where = { status: "approved" };
+  const where = { approval_status: "approved" };
   if (q) where.title = { [Op.iLike]: `%${q}%` };
-  if (categoryId) where.categoryId = categoryId;
+  if (categoryId) {
+    const category = await Category.findOne({
+      where: { id: categoryId, is_active: true },
+    });
+    if (!category) {
+      return res.json({ success: true, rows: [], count: 0 });
+    }
+    where.category_id = categoryId;
+  }
 
   const data = await Product.findAndCountAll({
     where,
-    include: [{ model: ProductImage, as: "images" }, { model: Category }],
+    include: [
+      { model: ProductImage, as: "images" },
+      { model: Category, as: "category" },
+      { model: ProductVariant, as: "variants", attributes: ["variant_id", "variant_price"] },
+    ],
     limit: +limit,
     offset: (+page - 1) * +limit,
     order: [["createdAt", "DESC"]],

@@ -9,6 +9,26 @@ import {
   adminBankDetailsCreateSchema,
   adminBankDetailsPatchSchema,
 } from "../utils/constant.js";
+import logisticsRoutes from "./logisticsRoutes.js";
+import { auth, requireRole } from "../middlewares/auth.js";
+import upload from "../middlewares/uploadMiddleware.js";
+import {
+  createCategory,
+  updateCategory,
+  deactivateCategory,
+  deleteCategoryPermanent,
+  uploadCategoryImage,
+} from "../controllers/categoryController.js";
+
+/** Multer wrapper so invalid file types return 400 JSON instead of 500 */
+const uploadSingleCategoryImage = (req, res, next) => {
+  upload.single("image")(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ success: false, message: err.message || "Invalid file" });
+    }
+    next();
+  });
+};
 
 router.get(
   "/config/bulk-order",
@@ -54,6 +74,7 @@ router.put(
   "/products/:product_id/modified/:variant_id",
   SuperAdminController.modifiedProducts,
 );
+
 
 // get all supplier
 router.get("/get-all-suppliers", SuperAdminController.getAllSupplier);
@@ -107,5 +128,50 @@ router.patch(
   validateWithJoi(adminBankDetailsPatchSchema),
   SuperAdminController.updateAdminBankDetails,
 );
+// payouts - supplier
+router.get("/payouts/suppliers/stats", SuperAdminController.getSupplierPayoutStats);
+router.get("/payouts/suppliers", SuperAdminController.getSupplierPayoutList);
+
+// payouts - partner (reseller)
+router.get("/payouts/partners/stats", SuperAdminController.getPartnerPayoutStats);
+router.get("/payouts/partners", SuperAdminController.getPartnerPayoutList);
+
+// payouts - settlement reports
+router.get("/payouts/settlements/stats", SuperAdminController.getSettlementStats);
+router.get("/payouts/settlements", SuperAdminController.getSettlementList);
+
+// payouts - transaction history
+router.get("/payouts/transactions/stats", SuperAdminController.getTransactionStats);
+router.get("/payouts/transactions", SuperAdminController.getTransactionList);
+
+// payouts - wallet management
+router.get("/payouts/wallet/stats", SuperAdminController.getWalletStats);
+router.get("/payouts/wallet", SuperAdminController.getWalletList);
+
+// platform manual payment (UPI / bank) — shown to suppliers; configured here
+router.get("/platform-collection-account", SuperAdminController.getPlatformCollectionAccount);
+router.put("/platform-collection-account", SuperAdminController.updatePlatformCollectionAccount);
+router.delete("/platform-collection-account", SuperAdminController.deletePlatformCollectionAccount);
+router.post(
+    "/platform-collection-account/qr",
+    upload.single("qrCode"),
+    SuperAdminController.uploadPlatformCollectionQr
+);
+router.delete("/platform-collection-account/qr", SuperAdminController.deletePlatformCollectionQr);
+
+router.use("/logistics", logisticsRoutes);
+
+// Categories (Super Admin only) — static paths before :id
+router.post(
+  "/categories/upload-image",
+  auth,
+  requireRole("ADMIN"),
+  uploadSingleCategoryImage,
+  uploadCategoryImage
+);
+router.post("/categories", auth, requireRole("ADMIN"), createCategory);
+router.put("/categories/:id", auth, requireRole("ADMIN"), updateCategory);
+router.delete("/categories/:id/permanent", auth, requireRole("ADMIN"), deleteCategoryPermanent);
+router.delete("/categories/:id", auth, requireRole("ADMIN"), deactivateCategory);
 
 export default router;

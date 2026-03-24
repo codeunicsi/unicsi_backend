@@ -1,22 +1,7 @@
-import {
-  Supplier,
-  Product,
-  ProductVariant,
-  ProductImage,
-  Warehouse,
-  Inventory,
-  SupplierPricing,
-  Reseller,
-  Order,
-  NdrCase,
-  supplier_gst_details,
-  SupplierKyc,
-  reseller_bank_details,
-  reseller_gst_details,
-} from "../models/index.js";
-import { User } from "../models/User.js";
+import { Supplier, Product, ProductVariant, ProductImage, Warehouse, Inventory, SupplierPricing, Reseller, Order, NdrCase, supplier_gst_details, supplier_bank_details, SupplierKyc, CourierPartner, CourierServiceability, CourierRateCard, AwbPool, Category, supplier_gst_details, reseller_bank_details, reseller_gst_details} from "../models/index.js";
+import User from "../models/User.js";
 
-/* ===========================
+/* =========================
     ASSOCIATIONS (MUST BE HERE)
     =========================== */
 
@@ -37,6 +22,14 @@ Product.belongsTo(Supplier, {
   foreignKey: "supplier_id",
   as: "supplier",
 });
+
+// Product → Category (no DB FK constraint so sync works if products.category_id was previously integer)
+Product.belongsTo(Category, { foreignKey: "category_id", as: "category", targetKey: "id", constraints: false });
+Category.hasMany(Product, { foreignKey: "category_id", constraints: false });
+
+// Category self-reference (parent/child)
+Category.belongsTo(Category, { as: "parent", foreignKey: "parent_id" });
+Category.hasMany(Category, { as: "children", foreignKey: "parent_id" });
 
 // Product → Variant
 Product.hasMany(ProductVariant, {
@@ -89,6 +82,16 @@ Supplier.hasOne(supplier_gst_details, {
 });
 
 Supplier.hasOne(SupplierKyc, {
+Reseller.belongsTo(User, { foreignKey: "user_id", as: "user" });
+User.hasMany(Reseller, { foreignKey: "user_id" });
+
+Supplier.hasOne(supplier_gst_details, { foreignKey: "supplier_id",
+    as: "gst_details",
+ });
+Supplier.hasOne(supplier_bank_details, { foreignKey: "supplier_id", as: "bank_details" });
+supplier_bank_details.belongsTo(Supplier, { foreignKey: "supplier_id" });
+
+ Supplier.hasOne(SupplierKyc, {
   foreignKey: "supplier_id",
   as: "kyc_details",
 });
@@ -105,6 +108,15 @@ reseller_bank_details.belongsTo(User, {
   foreignKey: "user_id",
   as: "user",
 });
+CourierPartner.hasMany(CourierServiceability, { foreignKey: "courier_id", as: "serviceability" });
+CourierServiceability.belongsTo(CourierPartner, { foreignKey: "courier_id", as: "courier" });
+
+CourierPartner.hasMany(CourierRateCard, { foreignKey: "courier_id", as: "rate_cards" });
+CourierRateCard.belongsTo(CourierPartner, { foreignKey: "courier_id", as: "courier" });
+
+CourierPartner.hasMany(AwbPool, { foreignKey: "courier_id", as: "awb_pool" });
+AwbPool.belongsTo(CourierPartner, { foreignKey: "courier_id", as: "courier" });
+
 
 User.hasOne(reseller_gst_details, {
   foreignKey: "user_id",

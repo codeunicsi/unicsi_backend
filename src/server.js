@@ -16,9 +16,10 @@ const __dirname = path.dirname(__filename);
 // Import all routes
 import routes from "./routes/index.js";
 
-// Import models so Sequelize is aware of them
+// Import models so Sequelize is aware of them (must load before sync)
 import User from "./models/User.js";
 import OTP from "./models/OTP.js"; // NEW: include OTP model
+import Category from "./models/Category.js";
 
 // Initialize environment variables
 dotenv.config();
@@ -54,56 +55,60 @@ app.use(cookieParser());
 // Connect to PostgreSQL Database
 connectDB();
 
-// Sync models with the database
-// `alter: true` updates tables automatically when models change
-sequelize
-  .sync({ alter: true })
-  .then(() => console.log("✅ Models synced with database"))
-  .catch((err) => console.error("❌ Error syncing models:", err.message));
+app.use(session({
+  secret: process.env.SESSION_SECRET || "default-secret-change-in-production",
+  resave: false,
+  saveUninitialized: true,
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
+  },
+}));
 
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
-    },
-  }),
-);
+// Serve uploaded files (same folder as supplier product images: uploads/images)
+const uploadsRoot = path.join(__dirname, "..", "uploads");
+app.use("/uploads", express.static(uploadsRoot));
 
 // Mount routes (handles all /api/auth/... and other endpoints)
-
 app.use("/api/v1/", routes);
 // app.use("/api/v1", uploadRoutes);
-// app.use("/uploads", express.static("uploads"));
+const uploadsStaticRoot = path.join(process.cwd(), "uploads");
+app.use("/uploads", express.static(uploadsStaticRoot));
 
 // Basic test route
 app.get("/health", (req, res) => {
   res.status(200).json({
-    status: "OK",
+    status: 'OK',
     timestamp: new Date().toISOString(),
     service: "Unicsi Backend API",
   });
 });
 
-//not found route
+// not found route
 app.use((req, res) => {
   res.status(404).json({
-    status: "error",
-    message: "Route not found",
-  });
+    status: 'error',
+    message: 'Route not found',
+  })
 });
 
-//error handler
+// error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
-    status: "error",
-    message: "Internal server error",
-  });
+    status: 'error',
+    message: 'Internal server error',
+  })
 });
 
-// Start Express server
+// Start Express server immediately (no blocking on sync)
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+
+// Sync DB in background: create "categories" first (Product FK may reference it), then sync all
+Category.sync({ alter: true })
+  .then(() => {
+    console.log("✅ Categories table ready");
+    return sequelize.sync({ alter: true });
+  })
+  .then(() => console.log("✅ All models synced with database"))
+  .catch((err) => console.error("❌ Error syncing models:", err.message));

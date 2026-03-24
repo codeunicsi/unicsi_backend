@@ -1,17 +1,4 @@
-import {
-  Supplier,
-  ProductImage,
-  Product,
-  ProductVariant,
-  Order,
-  Payment,
-  Warehouse,
-  Inventory,
-  supplier_bank_details,
-  supplier_gst_details,
-  PlatformSetting,
-  DropshipperSourceRequest,
-} from "../models/index.js";
+import { Supplier, ProductImage, Product, ProductVariant, Warehouse, Inventory, supplier_bank_details, supplier_gst_details, ProductOption, ProductOptionValue, Category,PlatformSetting, DropshipperSourceRequest } from "../models/index.js";
 import { Op } from "sequelize";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -646,163 +633,255 @@ export const getAllSupplier = async () => {
   }
 };
 
+
+
 export const add_products = async (req) => {
-  try {
-    const { supplierId, role } = req.user;
-    req.body.supplier_id = supplierId;
-
-    if (role !== "SUPPLIER") {
-      return {
-        success: false,
-        error: "Unauthorized - Only suppliers can add products",
-      };
-    }
-
-    if (!supplierId) {
-      return { success: false, error: "Unauthorized - Supplier ID not found" };
-    }
-
-    const { title, description, brand, approval_status } = req.body;
-
-    if (!title || !description || !brand || !approval_status) {
-      return {
-        success: false,
-        error:
-          "All fields (title, description, brand, approval_status) are required!",
-      };
-    }
-
-    if (description.length > 10000) {
-      return {
-        success: false,
-        error: "Description should be less than 10000 characters!",
-      };
-    }
-    if (title.length > 100) {
-      return {
-        success: false,
-        error: "Title should be less than 100 characters!",
-      };
-    }
-
-    const {
-      categoryId,
-      productGallery = [],
-      bulk_price,
-      mrp,
-      transfer_price,
-      gst_rate,
-      minimum_order_quantity,
-      bulk_price_refresh_days,
-    } = req.body;
-
-    // Create product
-    const product = await Product.create({
-      supplier_id: supplierId,
-      title,
-      description,
-      brand,
-      approval_status,
-      category_id: categoryId,
-      ...(bulk_price !== undefined && { bulk_price }),
-      ...(mrp !== undefined && { mrp }),
-      ...(transfer_price !== undefined && { transfer_price }),
-      ...(gst_rate !== undefined && { gst_rate }),
-      ...(minimum_order_quantity !== undefined && { minimum_order_quantity }),
-      ...(bulk_price_refresh_days !== undefined && { bulk_price_refresh_days }),
-      ...(bulk_price !== undefined && { bulk_price_updated_at: new Date() }),
-    });
-
-    const productId = product.product_id;
-
-    // Reload to ensure all fields (bulk_price, mrp, transfer_price) are populated
-    await product.reload();
-
-    /**
-     * Parse variants safely (fixed version)
-     */
-    let variants = req.body.variants;
+    const transaction = await sequelize.transaction();
+  
     try {
-      if (typeof variants === "string") {
-        variants = JSON.parse(variants);
-      } else if (Array.isArray(variants)) {
-        // Already parsed
-      } else {
-        console.log("⚠️ Unexpected variants type:", variants);
+      const { supplierId, role } = req.user || {};
+  
+      /**
+       * AUTH VALIDATION
+       */
+      if (!supplierId || role !== "SUPPLIER") {
+        await transaction.rollback();
         return {
           success: false,
-          error: "Invalid variants format. Must be JSON array.",
+          error: "Unauthorized - Only suppliers can add products",
         };
       }
-    } catch (e) {
-      console.log("❌ RAW VARIANTS RECEIVED:", variants);
-      return { success: false, error: `"variants" must be valid JSON array` };
-    }
-
-    // Must have at least one variant
-    if (!variants || variants.length === 0) {
-      return { success: false, error: "At least one variant is required!" };
-    }
-
-    // Create variants & inventory
-    const createdVariants = [];
-    for (const variant of variants) {
-      const variantRecord = await ProductVariant.create({
-        product_id: productId,
-        ...variant,
-      });
-
-      await Inventory.create({
-        product_id: productId,
-        variant_id: variantRecord.variant_id,
-        sku: variant.sku,
-        available_stock: variant.variant_stock,
-      });
-
-      createdVariants.push(variantRecord);
-    }
-
-    /**
-     * Save uploaded images
-     */
-    // const imagesPayload = [];
-    if (req.files && req.files.length > 0) {
-      console.log("req.files ==>", req.files[0]);
-      const imagesPayload = req.files.map((file, index) => ({
-        product_id: productId,
-        image_url: `https://${req.get("host")}/uploads/images/${file.filename}`,
-        sort_order: index,
-      }));
-
-      await ProductImage.bulkCreate(imagesPayload);
-    }
-
-    return {
-      success: true,
-      data: {
-        product_id: productId,
+  
+      /**
+       * SAFE BODY PARSING
+       */
+      const parseJSON = (data) => {
+        if (!data) return [];
+        if (typeof data === "string") {
+          try {
+            return JSON.parse(data);
+          } catch {
+            throw new Error("Invalid JSON format");
+          }
+        }
+        return data;
+      };
+  
+      let {
         title,
+        description,
         brand,
-        bulk_price: product.bulk_price,
-        mrp: product.mrp,
-        transfer_price: product.transfer_price,
-        gst_rate: product.gst_rate,
-        minimum_order_quantity: product.minimum_order_quantity,
-        bulk_price_refresh_days: product.bulk_price_refresh_days,
-        variantCount: createdVariants.length,
-        imagesCount: req.files?.length || 0,
         approval_status,
-        createdAt: product.createdAt,
-        variants: createdVariants,
-        // images: imagesPayload,
-      },
-      message: `Product created successfully with ${createdVariants.length} variant(s)`,
-    };
-  } catch (error) {
-    console.error("[v0] Add products error:", error);
-    return { success: false, error: error.message || "Failed to add product" };
-  }
-};
+        options,
+        variants,
+      } = req.body;
+      const categoryId = req.body.category_id ?? req.body.categoryId;
+
+      options = parseJSON(options);
+      variants = parseJSON(variants);
+
+      /**
+       * CATEGORY VALIDATION (when provided)
+       */
+      if (categoryId != null && categoryId !== "") {
+        const category = await Category.findOne({
+          where: { id: categoryId, is_active: true },
+        });
+        if (!category) {
+          await transaction.rollback();
+          return {
+            success: false,
+            error: "Invalid or inactive category. Please choose an active category.",
+          };
+        }
+      }
+
+      /**
+       * BASIC VALIDATION
+       */
+      if (!title || !description || !brand || !approval_status) {
+        await transaction.rollback();
+        return {
+          success: false,
+          error: "title, description, brand, approval_status are required",
+        };
+      }
+  
+      if (!Array.isArray(variants) || variants.length === 0) {
+        await transaction.rollback();
+        return {
+          success: false,
+          error: "At least one variant is required",
+        };
+      }
+  
+      if (title.length > 100) {
+        await transaction.rollback();
+        return {
+          success: false,
+          error: "Title must be less than 100 characters",
+        };
+      }
+  
+      if (description.length > 10000) {
+        await transaction.rollback();
+        return {
+          success: false,
+          error: "Description too long",
+        };
+      }
+  
+      /**
+       * CREATE PRODUCT
+       */
+      const product = await Product.create(
+        {
+          supplier_id: supplierId,
+          title,
+          description,
+          brand,
+          approval_status,
+          category_id: categoryId || null,
+        },
+        { transaction }
+      );
+  
+      const productId = product.product_id;
+  
+      /**
+       * SAVE PRODUCT IMAGES
+       */
+      let imagesCount = 0;
+  
+      if (req.files?.length) {
+        const imagesPayload = req.files.map((file, index) => ({
+          product_id: productId,
+          image_url: `https://${req.get("host")}/uploads/images/${file.filename}`,
+          sort_order: index,
+        }));
+  
+        await ProductImage.bulkCreate(imagesPayload, { transaction });
+  
+        imagesCount = imagesPayload.length;
+      }
+  
+      /**
+       * CREATE PRODUCT OPTIONS
+       */
+      const optionMap = {};
+      let optionsCount = 0;
+  
+      if (Array.isArray(options) && options.length > 0) {
+        for (const option of options) {
+          if (!option.name) {
+            throw new Error("Option name is required");
+          }
+  
+          const createdOption = await ProductOption.create(
+            {
+              product_id: productId,
+              name: option.name,
+              position: option.position || 1,
+            },
+            { transaction }
+          );
+  
+          optionMap[option.name] = createdOption.option_id;
+  
+          optionsCount++;
+  
+          /**
+           * CREATE OPTION VALUES
+           */
+          if (Array.isArray(option.values) && option.values.length > 0) {
+            const valuesPayload = option.values.map((value) => ({
+              option_id: createdOption.option_id,
+              value,
+            }));
+  
+            await ProductOptionValue.bulkCreate(valuesPayload, {
+              transaction,
+            });
+          }
+        }
+      }
+  
+      /**
+       * CREATE VARIANTS
+       */
+      const createdVariants = [];
+  
+      for (const variant of variants) {
+        if (!variant.sku) {
+          throw new Error("Variant SKU is required");
+        }
+  
+        const existingSku = await ProductVariant.findOne({
+          where: { sku: variant.sku },
+        });
+  
+        if (existingSku) {
+          throw new Error(`SKU already exists: ${variant.sku}`);
+        }
+  
+        const variantRecord = await ProductVariant.create(
+          {
+            product_id: productId,
+            sku: variant.sku,
+            price: variant.price,
+            compare_at_price: variant.compare_at_price,
+            inventory_quantity: variant.inventory_quantity || 0,
+            weight_grams: variant.weight_grams,
+            option1: variant.option1,
+            option2: variant.option2,
+            option3: variant.option3,
+            attributes: variant.attributes || {},
+          },
+          { transaction }
+        );
+  
+        /**
+         * INVENTORY RECORD
+         */
+        await Inventory.create(
+          {
+            product_id: productId,
+            variant_id: variantRecord.variant_id,
+            sku: variant.sku,
+            available_stock: variant.inventory_quantity || 0,
+          },
+          { transaction }
+        );
+  
+        createdVariants.push(variantRecord);
+      }
+  
+      /**
+       * COMMIT TRANSACTION
+       */
+      await transaction.commit();
+  
+      return {
+        success: true,
+        message: "Product created successfully",
+        data: {
+          product_id: productId,
+          variants_count: createdVariants.length,
+          images_count: imagesCount,
+          options_count: optionsCount,
+        },
+      };
+    } catch (error) {
+      await transaction.rollback();
+  
+      console.error("Add product error:", error);
+  
+      return {
+        success: false,
+        error: error.message || "Failed to create product",
+      };
+    }
+  };
 
 export const get_products = async (req) => {
   try {
@@ -876,7 +955,9 @@ export const update_product = async (req) => {
       return { success: false, error: "Product ID is required!" };
     }
 
-    const { title, description, brand, variants = [], images = [] } = req.body;
+        const { title, description, brand, variants = [], images = [], category_id: bodyCategoryId } =
+                req.body;
+        const categoryId = bodyCategoryId ?? req.body.categoryId;
 
     const product = await Product.findByPk(product_id);
 
@@ -884,7 +965,18 @@ export const update_product = async (req) => {
       return { success: false, error: "Product not found!" };
     }
 
-    const updatePayload = { title, description, brand };
+        if (categoryId != null && categoryId !== "") {
+            const category = await Category.findOne({
+                where: { id: categoryId, is_active: true },
+            });
+            if (!category) {
+                return { success: false, error: "Invalid or inactive category. Please choose an active category." };
+            }
+        }
+
+        const updatePayload = { title, description, brand };
+        if (categoryId !== undefined) updatePayload.category_id = categoryId || null;
+        await product.update(updatePayload);
 
     if (req.body.bulk_price !== undefined) {
       updatePayload.bulk_price = req.body.bulk_price;

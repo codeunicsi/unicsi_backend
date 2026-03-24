@@ -31,6 +31,7 @@ import {
   get_supplier_bulk_orders,
 } from "../utils/supplierFnc.js";
 import { getAdminBankDetailsForSupplier } from "../utils/adminFunc.js";
+import { getPlatformCollectionAccount } from "../utils/platformCollectionAccount.js";
 
 class SupplierController {
   async supplier_register(req, res) {
@@ -352,7 +353,22 @@ class SupplierController {
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
-  }
+  }  
+  
+  /** Where to pay Unicsi (UPI / bank) for manual top-ups — same data superadmin configures. */
+    async get_platform_payment_details(req, res) {
+        try {
+            const result = await getPlatformCollectionAccount();
+            if (!result.success) {
+                return res.status(400).json(result);
+            }
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(500).json({ success: false, message: error.message });
+        }
+    }
+  
+  
 
   async get_admin_bank_details(req, res) {
     try {

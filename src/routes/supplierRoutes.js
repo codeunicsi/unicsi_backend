@@ -23,6 +23,9 @@ router.put(
   supplierController.supplier_personal_details,
 );
 
+// platform payment instructions (wallet / manual pay to Unicsi)
+router.get("/platform-payment-details", auth, supplierController.get_platform_payment_details);
+
 //bank account
 router.get(
   "/stores/bankAccountDetails",
