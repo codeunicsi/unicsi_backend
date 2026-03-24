@@ -73,5 +73,7 @@ export {
     DropshipperSourceRequest,
     admin_bank_details,
     Payment,
-    PlatformSetting
+    PlatformSetting,
+    reseller_bank_details,
+    reseller_gst_details
 }

@@ -10,7 +10,6 @@ import {
   adminBankDetailsPatchSchema,
 } from "../utils/constant.js";
 import logisticsRoutes from "./logisticsRoutes.js";
-import { auth, requireRole } from "../middlewares/auth.js";
 import upload from "../middlewares/uploadMiddleware.js";
 import {
   createCategory,

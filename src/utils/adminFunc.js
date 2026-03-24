@@ -629,6 +629,21 @@ export const updateAdminBankDetails = async (req) => {
     if (Object.keys(updates).length === 0) {
       return { success: false, message: "No fields provided to update" };
     }
+    
+
+
+    await row.update(updates);
+
+    return {
+      success: true,
+      message: "Admin bank details updated successfully",
+      data: row,
+    };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};
+
 // --- Supplier Payouts ---
 export const getSupplierPayoutStats = async () => {
     try {
@@ -744,7 +759,7 @@ export const getPartnerPayoutStats = async () => {
         return { success: false, message: error.message };
     }
 };
-
+  
 export const getPartnerPayoutList = async () => {
     try {
         const resellers = await Reseller.findAll({
@@ -1001,18 +1016,6 @@ export const getWalletList = async () => {
     } catch (error) {
         return { success: false, message: error.message };
     }
-};
-
-    await row.update(updates);
-
-    return {
-      success: true,
-      message: "Admin bank details updated successfully",
-      data: row,
-    };
-  } catch (error) {
-    return { success: false, message: error.message };
-  }
 };
 
 export const getAdminBankDetailsForSupplier = async () => {
