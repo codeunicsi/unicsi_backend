@@ -147,16 +147,38 @@ router.get("/payouts/transactions", SuperAdminController.getTransactionList);
 router.get("/payouts/wallet/stats", SuperAdminController.getWalletStats);
 router.get("/payouts/wallet", SuperAdminController.getWalletList);
 
-// platform manual payment (UPI / bank) — shown to suppliers; configured here
-router.get("/platform-collection-account", SuperAdminController.getPlatformCollectionAccount);
-router.put("/platform-collection-account", SuperAdminController.updatePlatformCollectionAccount);
-router.delete("/platform-collection-account", SuperAdminController.deletePlatformCollectionAccount);
-router.post(
-    "/platform-collection-account/qr",
-    upload.single("qrCode"),
-    SuperAdminController.uploadPlatformCollectionQr
+// Platform receiving account (UPI / bank + QR) — same row suppliers read via GET /suppliers/platform-payment-details
+router.get(
+  "/platform-collection-account",
+  auth,
+  requireRole("ADMIN"),
+  SuperAdminController.getPlatformCollectionAccount,
 );
-router.delete("/platform-collection-account/qr", SuperAdminController.deletePlatformCollectionQr);
+router.put(
+  "/platform-collection-account",
+  auth,
+  requireRole("ADMIN"),
+  SuperAdminController.updatePlatformCollectionAccount,
+);
+router.delete(
+  "/platform-collection-account",
+  auth,
+  requireRole("ADMIN"),
+  SuperAdminController.deletePlatformCollectionAccount,
+);
+router.post(
+  "/platform-collection-account/qr",
+  auth,
+  requireRole("ADMIN"),
+  upload.single("qrCode"),
+  SuperAdminController.uploadPlatformCollectionQr,
+);
+router.delete(
+  "/platform-collection-account/qr",
+  auth,
+  requireRole("ADMIN"),
+  SuperAdminController.deletePlatformCollectionQr,
+);
 
 router.use("/logistics", logisticsRoutes);
 

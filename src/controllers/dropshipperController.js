@@ -594,7 +594,6 @@ class DropshipperController {
 
       const orderPayload = {
         reseller_id: resellerRecord.reseller_id,
-        // product_id: product.product_id,
         order_type: "BULK",
         quantity: quantity,
         // unit_bulk_price: unitBulkPrice.toFixed(2),
@@ -628,6 +627,9 @@ class DropshipperController {
       const orderColumns = await this.getOrderTableColumns();
       if (orderColumns.has("supplier_id")) {
         orderPayload.supplier_id = product.supplier_id;
+      }
+      if (orderColumns.has("product_id")) {
+        orderPayload.product_id = product.product_id;
       }
 
       const order = await Order.create(orderPayload);

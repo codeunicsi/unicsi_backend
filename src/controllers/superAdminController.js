@@ -7,20 +7,68 @@ import {
     clearPlatformCollectionQr,
     deletePlatformCollectionAccount as destroyPlatformCollectionAccount,
 } from "../utils/platformCollectionAccount.js";
+import { Op } from "sequelize";
+import {
+  Order,
+  Payment,
+  PlatformSetting,
+  Product,
+  Reseller,
+  User,
+} from "../models/index.js";
+
+function bulkFulfillmentStatus(paymentStatus) {
+  if (paymentStatus === "VERIFIED") return "Unfulfilled";
+  if (paymentStatus === "REJECTED") return "On hold";
+  return "Awaiting verification";
+}
+
+function bulkReviewStage(paymentStatus, verificationStatus) {
+  if (paymentStatus === "VERIFIED") return "Approved";
+  if (paymentStatus === "REJECTED") return "Rejected";
+  if (verificationStatus === "pending") return "Manual review";
+  return "—";
+}
+
+function paymentTypeLabel(mode) {
+  if (mode === "upi") return "UPI";
+  if (mode === "bank_transfer") return "Bank transfer";
+  return mode || null;
+}
 
 class SuperAdminController {
   getAllBulkOrders = async (req, res) => {
     try {
-      const { paymentStatus, orderStatus, page = 1, limit = 20 } = req.query;
-      const where = { order_type: "BULK" };
+      const { paymentStatus, orderStatus, page = 1, limit = 20, search } =
+        req.query;
+
+      const andParts = [{ order_type: "BULK" }];
 
       if (paymentStatus) {
-        where.payment_status = paymentStatus;
+        andParts.push({ payment_status: paymentStatus });
       }
 
       if (orderStatus) {
-        where.order_status = orderStatus;
+        andParts.push({ order_status: orderStatus });
       }
+
+      const q = typeof search === "string" ? search.trim() : "";
+      if (q) {
+        const like = `%${q}%`;
+        const orConds = [
+          { invoice_number: { [Op.iLike]: like } },
+          { customer_name: { [Op.iLike]: like } },
+          { transaction_reference: { [Op.iLike]: like } },
+        ];
+        const uuidRe =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRe.test(q)) {
+          orConds.push({ order_id: q });
+        }
+        andParts.push({ [Op.or]: orConds });
+      }
+
+      const where = { [Op.and]: andParts };
 
       const safePage = Math.max(Number(page) || 1, 1);
       const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
@@ -37,6 +85,10 @@ class SuperAdminController {
       const productIds = [
         ...new Set(rows.map((order) => order.product_id).filter(Boolean)),
       ];
+      const resellerIds = [
+        ...new Set(rows.map((order) => order.reseller_id).filter(Boolean)),
+      ];
+
       const payments = orderIds.length
         ? await Payment.findAll({
             where: { order_id: orderIds },
@@ -51,6 +103,38 @@ class SuperAdminController {
           })
         : [];
 
+      const resellers = resellerIds.length
+        ? await Reseller.findAll({
+            where: { reseller_id: resellerIds },
+            attributes: ["reseller_id", "user_id"],
+          })
+        : [];
+
+      const userIds = [
+        ...new Set(resellers.map((r) => r.user_id).filter(Boolean)),
+      ];
+      const users = userIds.length
+        ? await User.findAll({
+            where: { user_id: userIds },
+            attributes: ["user_id", "name", "email"],
+          })
+        : [];
+
+      const userById = new Map(users.map((u) => [u.user_id, u]));
+      const resellerMetaById = new Map(
+        resellers.map((r) => {
+          const u = userById.get(r.user_id);
+          return [
+            r.reseller_id,
+            {
+              userId: r.user_id,
+              name: u?.name || null,
+              email: u?.email || null,
+            },
+          ];
+        }),
+      );
+
       const productTitleById = new Map(
         products.map((product) => [product.product_id, product.title]),
       );
@@ -64,6 +148,9 @@ class SuperAdminController {
 
       const orders = rows.map((order) => {
         const latestPayment = latestPaymentByOrder.get(order.order_id);
+        const rm = order.reseller_id
+          ? resellerMetaById.get(order.reseller_id)
+          : null;
         return {
           orderId: order.order_id,
           invoiceNumber: order.invoice_number,
@@ -71,7 +158,8 @@ class SuperAdminController {
           productTitle: productTitleById.get(order.product_id) || null,
           supplierId: order.supplier_id,
           resellerId: order.reseller_id,
-          resellerUserId: order.reseller_id,
+          resellerUserId: rm?.userId ?? null,
+          resellerName: rm?.name || rm?.email || null,
           quantity: order.quantity,
           customerName: order.customer_name,
           customerPhone: order.customer_phone,
@@ -80,6 +168,12 @@ class SuperAdminController {
           totalPayable: order.total_payable,
           orderStatus: order.order_status,
           paymentStatus: order.payment_status,
+          fulfillmentStatus: bulkFulfillmentStatus(order.payment_status),
+          reviewStage: bulkReviewStage(
+            order.payment_status,
+            latestPayment?.verification_status,
+          ),
+          paymentType: paymentTypeLabel(latestPayment?.payment_mode),
           transactionReference:
             order.transaction_reference ||
             latestPayment?.transaction_ref ||

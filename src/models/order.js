@@ -24,10 +24,10 @@ export const Order = sequelize.define(
       allowNull: true,
     },
 
-    // product_id: {
-    //   type: DataTypes.UUID,
-    //   allowNull: true,
-    // },
+    product_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
 
     order_type: {
       type: DataTypes.STRING,
