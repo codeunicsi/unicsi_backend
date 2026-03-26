@@ -1,3 +1,5 @@
+# Ignore folder for untracked files
+untracked_files/
 node_modules
 .env
 uploads
