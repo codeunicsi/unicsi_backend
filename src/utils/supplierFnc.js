@@ -791,6 +791,8 @@ export const add_products = async (req) => {
     /**
      * CREATE PRODUCT
      */
+
+    // Create product with all relevant fields
     const product = await Product.create(
       {
         supplier_id: supplierId,
@@ -799,6 +801,12 @@ export const add_products = async (req) => {
         brand,
         approval_status,
         category_id: categoryId || null,
+        mrp: req.body.mrp,
+        bulk_price: req.body.bulk_price,
+        transfer_price: req.body.transfer_price,
+        gst_rate: req.body.gst_rate,
+        minimum_order_quantity: req.body.minimum_order_quantity,
+        bulk_price_refresh_days: req.body.bulk_price_refresh_days,
       },
       { transaction },
     );
@@ -809,16 +817,13 @@ export const add_products = async (req) => {
      * SAVE PRODUCT IMAGES
      */
     let imagesCount = 0;
-
-    if (req.files?.length) {
+    if (req.files && req.files.length) {
       const imagesPayload = req.files.map((file, index) => ({
         product_id: productId,
         image_url: `https://${req.get("host")}/uploads/images/${file.filename}`,
         sort_order: index,
       }));
-
       await ProductImage.bulkCreate(imagesPayload, { transaction });
-
       imagesCount = imagesPayload.length;
     }
 
@@ -941,15 +946,34 @@ export const add_products = async (req) => {
      */
     await transaction.commit();
 
+    // Fetch full product details with associations
+    const fullProduct = await Product.findOne({
+      where: { product_id: productId },
+      include: [
+        { model: ProductVariant, as: "variants" },
+        { model: ProductImage, as: "images" },
+      ],
+      attributes: {
+        include: [
+          [
+            sequelize.literal(
+              `(SELECT COUNT(*) FROM product_images WHERE product_images.product_id = products.product_id)`
+            ),
+            "imageCount",
+          ],
+        ],
+      },
+    });
+
+    // Attach bulk price refresh meta if needed
+    const bulkConfig = await getBulkOrderConfig();
+    const refreshDays = bulkConfig?.supplierBulkPriceRefreshDays || null;
+    const [productWithRefresh] = attachBulkPriceRefreshMeta([fullProduct], refreshDays);
+
     return {
       success: true,
       message: "Product created successfully",
-      data: {
-        product_id: productId,
-        variants_count: createdVariants.length,
-        images_count: imagesCount,
-        options_count: optionsCount,
-      },
+      data: productWithRefresh,
     };
   } catch (error) {
     await transaction.rollback();
@@ -1069,7 +1093,7 @@ export const update_product = async (req) => {
       updatePayload.category_id = categoryId || null;
     await product.update(updatePayload);
 
-    if (req.body.bulk_price !== undefined) {
+    if (req.body.bulk_price !== undefined && req.body.bulk_price !== product.bulk_price) {
       updatePayload.bulk_price = req.body.bulk_price;
       updatePayload.bulk_price_updated_at = new Date();
       updatePayload.bulk_price_last_reminded_at = null;
