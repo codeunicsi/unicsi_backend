@@ -168,8 +168,16 @@ router.post("/shopify/webhooks", verifyShopifyWebhook, async (req, res) => {
 
 router.get("/products",
   auth,
-  requireRole("RESELLER"), 
+  requireRole("RESELLER"),
   DropshipperController.getAllDropshipperProducts
+);
+
+// Get products by category ID
+router.get(
+  "/products/category/:categoryId",
+  auth,
+  requireRole("RESELLER"),
+  DropshipperController.getProductsByCategoryId
 );
 
 router.get("/products/:product_id",
