@@ -10,6 +10,7 @@ import {
   vendorSetStatus,
   bulkUpload,
   bulkUploadZip,
+  cloneProduct,
 } from "../controllers/productController.js";
 
 // const upload = multer({ dest: "uploads/" });
@@ -24,7 +25,7 @@ router.post(
     { name: "images", maxCount: 10 },
     { name: "videos", maxCount: 5 },
   ]),
-  createProduct
+  createProduct,
 );
 
 router.post("/", auth, requireRole("vendor"), createProduct);
@@ -38,14 +39,17 @@ router.post(
   auth,
   requireRole("vendor"),
   upload.single("file"),
-  bulkUpload
+  bulkUpload,
 );
 router.post(
   "/bulk-zip",
   auth,
   requireRole("vendor"),
   upload.single("file"),
-  bulkUploadZip
+  bulkUploadZip,
 );
+
+// ✅ Clone product (supplier only)
+router.post("/:id/clone", auth, requireRole("vendor"), cloneProduct);
 
 export default router;

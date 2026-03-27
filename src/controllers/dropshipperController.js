@@ -11,11 +11,14 @@ import {
   Payment,
   PlatformSetting,
   DropshipperSourceRequest,
+  Category,
 } from "../models/index.js";
 import crypto from "crypto";
 import axios from "axios";
 import Decimal from "decimal.js";
 import { getAdminBankDetailsForSupplier } from "../utils/adminFunc.js";
+import { Op } from "sequelize";
+import { mapToShopifyProduct } from "../utils/commonFunc.js"
 
 const API_KEY = process.env.SHOPIFY_API_KEY;
 const API_SECRET = process.env.SHOPIFY_API_SECRET;
@@ -911,15 +914,18 @@ class DropshipperController {
     }
   };
 
+
   pushProductToShopify = async (req, res) => {
     try {
       const { shop, access_token, productData } = req.body;
       console.log("shop", shop);
       console.log("accessToken", access_token);
 
+      const shopifyPayload = mapToShopifyProduct(productData);
+
       const productRes = await axios.post(
         `https://${shop}/admin/api/2026-01/products.json`,
-        productData,
+        shopifyPayload,
         {
           headers: {
             "X-Shopify-Access-Token": access_token,
@@ -928,10 +934,18 @@ class DropshipperController {
         },
       );
 
-      return res.json(productRes.data);
+      res.json({
+      success: true,
+      shopify_product_id: response.data.product.id,
+      data: response.data,
+      });
+
     } catch (error) {
       console.error(error.response?.data || error);
-      res.status(500).send("Failed to push product to Shopify");
+      res.status(500).json({
+      success: false,
+      error: error.response?.data || error.message,
+    });
     }
   };
 
@@ -988,6 +1002,62 @@ class DropshipperController {
     console.log("shop/redact webhook received");
     res.status(200).send("OK");
   };
+
+  // GET all active & approved products for dropshipper
+getAllDropshipperProducts = async (req, res) => {
+  try {
+    const products = await Product.findAll({
+      where: {
+        approval_status: "approved",
+        lifecycle_status: "active",
+      },
+      include: [
+        {
+          model: ProductVariant,
+          as: "variants",
+          where: { is_active: true },
+          required: true,
+        },
+        { model: ProductImage, as: "images" },
+        { model: Category, as: "category" },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+    res.json({ success: true, data: products });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// GET single product details for dropshipper
+getDropshipperProductById = async (req, res) => {
+  try {
+    const { product_id } = req.params;
+    const product = await Product.findOne({
+      where: {
+        product_id,
+        approval_status: "approved",
+        lifecycle_status: "active",
+      },
+      include: [
+        {
+          model: ProductVariant,
+          as: "variants",
+          where: { is_active: true },
+          required: false,
+        },
+        { model: ProductImage, as: "images" },
+        { model: Category, as: "category" },
+      ],
+    });
+    if (!product) {
+      return res.status(404).json({ success: false, error: "Product not found" });
+    }
+    res.json({ success: true, data: product });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
 }
 
 export default new DropshipperController();

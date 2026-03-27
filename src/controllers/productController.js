@@ -69,7 +69,7 @@ export const createProduct = async (req, res) => {
 
     if (allUrls.length) {
       await ProductImage.bulkCreate(
-        allUrls.map((m) => ({ productId: product.id, ...m }))
+        allUrls.map((m) => ({ productId: product.id, ...m })),
       );
     }
 
@@ -87,7 +87,10 @@ export const myProducts = async (req, res) => {
   if (q) where.title = { [Op.iLike]: `%${q}%` };
   const data = await Product.findAndCountAll({
     where,
-    include: [{ model: ProductImage, as: "images" }, { model: Category, as: "category" }],
+    include: [
+      { model: ProductImage, as: "images" },
+      { model: Category, as: "category" },
+    ],
     limit: +limit,
     offset: (+page - 1) * +limit,
     order: [["createdAt", "DESC"]],
@@ -168,7 +171,7 @@ export const bulkUpload = async (req, res) => {
                 productId: product.id,
                 url,
                 sortOrder: i,
-              }))
+              })),
             );
           }
         }
@@ -362,5 +365,107 @@ export const bulkUploadZip = async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: err.message });
+  }
+};
+
+// Vendor: Clone product (creates a new product with optional overrides)
+export const cloneProduct = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const { id } = req.params;
+    // Find the product to clone
+    const product = await Product.findOne({ where: { product_id: id } });
+    if (!product) return res.status(404).json({ message: "Product not found" });
+
+    // Prepare new product data, allowing overrides from req.body
+    const {
+      title = product.title,
+      description = product.description,
+      sku,
+      transfer_price = product.transfer_price,
+      bulk_price = product.bulk_price,
+      mrp = product.mrp,
+      qtyInStock = product.qtyInStock,
+      weightGrams = product.weightGrams,
+      lengthCm = product.lengthCm,
+      widthCm = product.widthCm,
+      heightCm = product.heightCm,
+      category_id = product.category_id,
+      brand = product.brand,
+      gst_rate = product.gst_rate,
+      minimum_order_quantity = product.minimum_order_quantity,
+      approval_status = "draft",
+      lifecycle_status = "inactive",
+    } = req.body;
+
+    // SKU must be provided for the new product
+    if (!sku)
+      return res
+        .status(400)
+        .json({ message: "SKU is required for cloned product" });
+
+    // Create the new product
+    const newProduct = await Product.create({
+      supplier_id: vendorId,
+      title,
+      description,
+      sku,
+      transfer_price,
+      bulk_price,
+      mrp,
+      qtyInStock,
+      weightGrams,
+      lengthCm,
+      widthCm,
+      heightCm,
+      category_id,
+      brand,
+      gst_rate,
+      minimum_order_quantity,
+      approval_status,
+      lifecycle_status,
+    });
+
+    // Clone images
+    const images = await ProductImage.findAll({
+      where: { product_id: product.product_id },
+    });
+    for (const img of images) {
+      await ProductImage.create({
+        product_id: newProduct.product_id,
+        image_url: img.image_url,
+        alt_text: img.alt_text,
+        sort_order: img.sort_order,
+      });
+    }
+
+    // Clone variants
+    const { ProductVariant } = await import("../models/index.js");
+    const variants = await ProductVariant.findAll({
+      where: { product_id: product.product_id },
+    });
+    for (const v of variants) {
+      await ProductVariant.create({
+        product_id: newProduct.product_id,
+        sku: v.sku + "-CLONE-" + Math.floor(Math.random() * 10000),
+        title: v.title,
+        price: v.price,
+        compare_at_price: v.compare_at_price,
+        cost_price: v.cost_price,
+        inventory_quantity: v.inventory_quantity,
+        inventory_management: v.inventory_management,
+        weight_grams: v.weight_grams,
+        option1: v.option1,
+        option2: v.option2,
+        option3: v.option3,
+        attributes: v.attributes,
+        is_active: v.is_active,
+        dimension_cm: v.dimension_cm,
+      });
+    }
+
+    res.status(201).json({ success: true, data: newProduct });
+  } catch (e) {
+    res.status(400).json({ message: e.message });
   }
 };
