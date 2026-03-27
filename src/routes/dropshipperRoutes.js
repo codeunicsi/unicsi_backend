@@ -166,4 +166,16 @@ router.post("/shopify/webhooks", verifyShopifyWebhook, async (req, res) => {
   res.status(200).send("OK");
 });
 
+router.get("/products",
+  auth,
+  requireRole("RESELLER"), 
+  DropshipperController.getAllDropshipperProducts
+);
+
+router.get("/products/:product_id",
+  auth,
+  requireRole("RESELLER"),
+  DropshipperController.getDropshipperProductById
+);
+
 export default router;
