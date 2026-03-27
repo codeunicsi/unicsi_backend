@@ -70,7 +70,7 @@ export const ProductVariant = sequelize.define(
     },
     dimension_cm: {
       type: DataTypes.JSONB,
-      allowNull: true,
+      allowNull: false,
       defaultValue: null,
       comment: "Product dimensions in cm: {height, width, length}",
     },
