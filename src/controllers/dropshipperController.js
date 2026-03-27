@@ -18,6 +18,7 @@ import axios from "axios";
 import Decimal from "decimal.js";
 import { getAdminBankDetailsForSupplier } from "../utils/adminFunc.js";
 import { Op } from "sequelize";
+import { mapToShopifyProduct } from "../utils/commonFunc.js"
 
 const API_KEY = process.env.SHOPIFY_API_KEY;
 const API_SECRET = process.env.SHOPIFY_API_SECRET;
@@ -913,15 +914,18 @@ class DropshipperController {
     }
   };
 
+
   pushProductToShopify = async (req, res) => {
     try {
       const { shop, access_token, productData } = req.body;
       console.log("shop", shop);
       console.log("accessToken", access_token);
 
+      const shopifyPayload = mapToShopifyProduct(productData);
+
       const productRes = await axios.post(
         `https://${shop}/admin/api/2026-01/products.json`,
-        productData,
+        shopifyPayload,
         {
           headers: {
             "X-Shopify-Access-Token": access_token,
@@ -930,10 +934,18 @@ class DropshipperController {
         },
       );
 
-      return res.json(productRes.data);
+      res.json({
+      success: true,
+      shopify_product_id: response.data.product.id,
+      data: response.data,
+      });
+
     } catch (error) {
       console.error(error.response?.data || error);
-      res.status(500).send("Failed to push product to Shopify");
+      res.status(500).json({
+      success: false,
+      error: error.response?.data || error.message,
+    });
     }
   };
 
