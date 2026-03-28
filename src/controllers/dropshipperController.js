@@ -935,17 +935,17 @@ class DropshipperController {
       );
 
       res.json({
-      success: true,
-      shopify_product_id: response.data.product.id,
-      data: response.data,
+        success: true,
+        shopify_product_id: response.data.product.id,
+        data: response.data,
       });
 
     } catch (error) {
       console.error(error.response?.data || error);
       res.status(500).json({
-      success: false,
-      error: error.response?.data || error.message,
-    });
+        success: false,
+        error: error.response?.data || error.message,
+      });
     }
   };
 
@@ -1004,60 +1004,88 @@ class DropshipperController {
   };
 
   // GET all active & approved products for dropshipper
-getAllDropshipperProducts = async (req, res) => {
-  try {
-    const products = await Product.findAll({
-      where: {
-        approval_status: "approved",
-        lifecycle_status: "active",
-      },
-      include: [
-        {
-          model: ProductVariant,
-          as: "variants",
-          where: { is_active: true },
-          required: true,
+  getAllDropshipperProducts = async (req, res) => {
+    try {
+      const products = await Product.findAll({
+        where: {
+          approval_status: "approved",
+          lifecycle_status: "active",
         },
-        { model: ProductImage, as: "images" },
-        { model: Category, as: "category" },
-      ],
-      order: [["createdAt", "DESC"]],
-    });
-    res.json({ success: true, data: products });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
-
-// GET single product details for dropshipper
-getDropshipperProductById = async (req, res) => {
-  try {
-    const { product_id } = req.params;
-    const product = await Product.findOne({
-      where: {
-        product_id,
-        approval_status: "approved",
-        lifecycle_status: "active",
-      },
-      include: [
-        {
-          model: ProductVariant,
-          as: "variants",
-          where: { is_active: true },
-          required: false,
-        },
-        { model: ProductImage, as: "images" },
-        { model: Category, as: "category" },
-      ],
-    });
-    if (!product) {
-      return res.status(404).json({ success: false, error: "Product not found" });
+        include: [
+          {
+            model: ProductVariant,
+            as: "variants",
+            where: { is_active: true },
+            required: true,
+          },
+          { model: ProductImage, as: "images" },
+          { model: Category, as: "category" },
+        ],
+        order: [["createdAt", "DESC"]],
+      });
+      res.json({ success: true, data: products });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
     }
-    res.json({ success: true, data: product });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
+  };
+
+  // GET single product details for dropshipper
+  getDropshipperProductById = async (req, res) => {
+    try {
+      const { product_id } = req.params;
+      const product = await Product.findOne({
+        where: {
+          product_id,
+          approval_status: "approved",
+          lifecycle_status: "active",
+        },
+        include: [
+          {
+            model: ProductVariant,
+            as: "variants",
+            where: { is_active: true },
+            required: false,
+          },
+          { model: ProductImage, as: "images" },
+          { model: Category, as: "category" },
+        ],
+      });
+      if (!product) {
+        return res.status(404).json({ success: false, error: "Product not found" });
+      }
+      res.json({ success: true, data: product });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  };
+
+  // GET products by category ID for dropshipper
+  getProductsByCategoryId = async (req, res) => {
+    try {
+      const { categoryId } = req.params;
+      const products = await Product.findAll({
+        where: {
+          approval_status: "approved",
+          lifecycle_status: "active",
+          category_id: categoryId,
+        },
+        include: [
+          {
+            model: ProductVariant,
+            as: "variants",
+            where: { is_active: true },
+            required: true,
+          },
+          { model: ProductImage, as: "images" },
+          { model: Category, as: "category" },
+        ],
+        order: [["createdAt", "DESC"]],
+      });
+      res.json({ success: true, count: products.length, data: products });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  };
 }
 
 export default new DropshipperController();
