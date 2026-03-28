@@ -46,49 +46,121 @@ router.put(
 
 router.get(
   "/products/get-pending-products",
+  auth,
+  requireRole("ADMIN"),
   SuperAdminController.getPendingProducts,
 );
-router.get("/products/pending/stats", SuperAdminController.getPendingStats);
-router.get("/products/get-live-products", SuperAdminController.getLiveProducts);
-router.get("/products/live/stats", SuperAdminController.getLiveProductsStats);
-router.get("/products/rejected/stats", SuperAdminController.getRejectedStats);
-router.get("/products/rejected", SuperAdminController.getRejectedProducts);
-router.get("/products/:product_id", SuperAdminController.getProductById);
-router.delete("/products/:product_id", SuperAdminController.archiveLiveProduct);
+router.get(
+  "/products/pending/stats",
+  auth,
+  requireRole("ADMIN"),
+  SuperAdminController.getPendingStats,
+);
+router.get(
+  "/products/get-live-products",
+  auth,
+  requireRole("ADMIN"),
+  SuperAdminController.getLiveProducts,
+);
+router.get(
+  "/products/live/stats",
+  auth,
+  requireRole("ADMIN"),
+  SuperAdminController.getLiveProductsStats,
+);
+router.get(
+  "/products/rejected/stats",
+  auth,
+  requireRole("ADMIN"),
+  SuperAdminController.getRejectedStats,
+);
+router.get(
+  "/products/rejected",
+  auth,
+  requireRole("ADMIN"),
+  SuperAdminController.getRejectedProducts,
+);
+router.get(
+  "/products/:product_id",
+  auth,
+  requireRole("ADMIN"),
+  SuperAdminController.getProductById,
+);
+router.delete(
+  "/products/:product_id",
+  auth,
+  requireRole("ADMIN"),
+  SuperAdminController.archiveLiveProduct,
+);
 router.delete(
   "/products/:product_id/rejected",
+  auth,
+  requireRole("ADMIN"),
   SuperAdminController.deleteRejectedProduct,
 );
 router.post(
   "/products/:product_id/approve",
+  auth,
+  requireRole("ADMIN"),
   SuperAdminController.approveProduct,
 );
-router.post("/products/:product_id/reject", SuperAdminController.rejectProduct);
-router.put("/products/update-product", SuperAdminController.updateProduct);
+router.post(
+  "/products/:product_id/reject",
+  auth,
+  requireRole("ADMIN"),
+  SuperAdminController.rejectProduct,
+);
+router.put(
+  "/products/update-product",
+  auth,
+  requireRole("ADMIN"),
+  SuperAdminController.updateProduct,
+);
 router.put(
   "/products/:product_id/status",
+  auth,
+  requireRole("ADMIN"),
   SuperAdminController.updateLiveProductStatus,
 );
 router.put(
   "/products/:product_id/modified/:variant_id",
+  auth,
+  requireRole("ADMIN"),
   SuperAdminController.modifiedProducts,
 );
 
 
 // get all supplier
-router.get("/get-all-suppliers", SuperAdminController.getAllSupplier);
+router.get(
+  "/get-all-suppliers",
+  auth,
+  requireRole("ADMIN"),
+  SuperAdminController.getAllSupplier,
+);
 
 // supplier kyc verification
 router.get(
   "/get-all-kyc-verifications",
+  auth,
+  requireRole("ADMIN"),
   SuperAdminController.supplierKycVerification,
 );
 
 // supplier verify
-router.post("/supplier-verify", SuperAdminController.verifySupplier);
+router.post(
+  "/supplier-verify",
+  auth,
+  requireRole("ADMIN"),
+  SuperAdminController.verifySupplier,
+);
 
 // supplier reject
-router.post("/supplier/kyc/reject", SuperAdminController.rejectSupplierProof);
+router.post(
+  "/supplier/kyc/reject",
+  auth,
+  requireRole("ADMIN"),
+  SuperAdminController.rejectSupplierProof,
+);
 
 router.patch(
   "/bulk-orders/:order_id/verify-payment",

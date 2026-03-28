@@ -7,6 +7,7 @@ import { Product } from "../models/index.js";
 import { ProductImage } from "../models/index.js";
 import Category from "../models/Category.js";
 import { Op } from "sequelize";
+import { finalizeUploadedProductImages } from "../utils/productImageStorage.js";
 
 // Vendor: Create product (draft → pending)
 export const createProduct = async (req, res) => {
@@ -42,11 +43,10 @@ export const createProduct = async (req, res) => {
     });
     const uploadedMedia = [];
 
-    if (req.files?.images) {
-      req.files.images.forEach((img, i) => {
-        const publicPath = `uploads/images/${img.filename}`.replace(/\\/g, "/");
-        const url = `${req.protocol}://${req.get("host")}/${publicPath}`;
-        uploadedMedia.push({ url, sortOrder: i });
+    if (req.files?.images?.length) {
+      const imageUrls = await finalizeUploadedProductImages(req, req.files.images);
+      imageUrls.forEach((url, i) => {
+        if (url) uploadedMedia.push({ url, sortOrder: i });
       });
     }
 

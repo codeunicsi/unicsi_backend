@@ -178,7 +178,10 @@ class SupplierController {
   async add_products(req, res) {
     try {
       const result = await add_products(req);
-      res.json(result);
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+      return res.status(201).json(result);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -232,7 +235,10 @@ class SupplierController {
   async update_product(req, res) {
     try {
       const result = await update_product(req);
-      res.json(result);
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+      return res.json(result);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }

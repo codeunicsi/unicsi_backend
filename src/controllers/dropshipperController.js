@@ -16,6 +16,7 @@ import crypto from "crypto";
 import axios from "axios";
 import Decimal from "decimal.js";
 import { getAdminBankDetailsForSupplier } from "../utils/adminFunc.js";
+import { finalizeUploadedProductImage } from "../utils/productImageStorage.js";
 
 const API_KEY = process.env.SHOPIFY_API_KEY;
 const API_SECRET = process.env.SHOPIFY_API_SECRET;
@@ -752,7 +753,10 @@ class DropshipperController {
       const { productName, productCategory, productImageUrl, expectedPrice } =
         req.body;
 
-      const uploadedImageUrl = this.buildFileUrl(req, "productImage");
+      const productImageFile = req.files?.productImage?.[0];
+      const uploadedImageUrl = productImageFile
+        ? await finalizeUploadedProductImage(req, productImageFile)
+        : null;
       const directImageUrl =
         productImageUrl && String(productImageUrl).trim()
           ? String(productImageUrl).trim()
