@@ -8,7 +8,6 @@ import { fileURLToPath } from "url";
 import("../src/config/association.js");
 import cookieParser from "cookie-parser";
 import session from "express-session";
-// import uploadRoutes from "./routes/upload.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,7 +69,6 @@ app.use("/uploads", express.static(uploadsRoot));
 
 // Mount routes (handles all /api/auth/... and other endpoints)
 app.use("/api/v1/", routes);
-// app.use("/api/v1", uploadRoutes);
 const uploadsStaticRoot = path.join(process.cwd(), "uploads");
 app.use("/uploads", express.static(uploadsStaticRoot));
 

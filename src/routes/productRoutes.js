@@ -1,5 +1,4 @@
 import express from "express";
-import multer from "multer";
 import { auth, requireRole } from "../middlewares/auth.js";
 import upload from "../middlewares/uploadMiddleware.js";
 import {
@@ -12,7 +11,6 @@ import {
   bulkUploadZip,
 } from "../controllers/productController.js";
 
-// const upload = multer({ dest: "uploads/" });
 const router = express.Router();
 
 // ✅ Create single product (images/videos optional)
@@ -27,7 +25,6 @@ router.post(
   createProduct
 );
 
-router.post("/", auth, requireRole("vendor"), createProduct);
 router.get("/mine", auth, requireRole("vendor"), myProducts);
 // ✅ Update single product
 router.put("/:id", auth, requireRole("vendor"), updateProduct);

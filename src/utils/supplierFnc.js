@@ -2,8 +2,8 @@ import { Supplier, ProductImage, Product, ProductVariant, Warehouse, Inventory, 
 import { Op } from "sequelize";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import upload from "../middlewares/uploadMiddleware.js";
 import sequelize from "../config/database.js";
+import { finalizeUploadedProductImages } from "./productImageStorage.js";
 
 const MILLISECONDS_IN_A_DAY = 24 * 60 * 60 * 1000;
 const catch_error_msg = "Something went wrong!";
@@ -754,14 +754,19 @@ export const add_products = async (req) => {
       let imagesCount = 0;
   
       if (req.files?.length) {
-        const imagesPayload = req.files.map((file, index) => ({
-          product_id: productId,
-          image_url: `https://${req.get("host")}/uploads/images/${file.filename}`,
-          sort_order: index,
-        }));
-  
-        await ProductImage.bulkCreate(imagesPayload, { transaction });
-  
+        const urls = await finalizeUploadedProductImages(req, req.files);
+        const imagesPayload = urls
+          .map((image_url, index) =>
+            image_url
+              ? { product_id: productId, image_url, sort_order: index }
+              : null,
+          )
+          .filter(Boolean);
+
+        if (imagesPayload.length) {
+          await ProductImage.bulkCreate(imagesPayload, { transaction });
+        }
+
         imagesCount = imagesPayload.length;
       }
   
@@ -1121,16 +1126,12 @@ export const add_product_images = async (req) => {
       return { success: false, error: "No images uploaded" };
     }
 
-    // Build image records
-    const imagesPayload = req.files.map((file, index) => {
-      const publicPath = `uploads/images/${file.filename}`.replace(/\\/g, "/");
-
-      return {
-        variant_id,
-        image_url: `${req.protocol}://${req.get("host")}/${publicPath}`,
-        sort_order: index,
-      };
-    });
+    const urls = await finalizeUploadedProductImages(req, req.files);
+    const imagesPayload = urls
+      .map((image_url, index) =>
+        image_url ? { variant_id, image_url, sort_order: index } : null,
+      )
+      .filter(Boolean);
 
     await ProductImage.bulkCreate(imagesPayload);
 

@@ -37,7 +37,6 @@
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
-    "multer-s3": "^3.0.1",
     "nodemailer": "^7.0.10",
     "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
