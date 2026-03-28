@@ -31,6 +31,11 @@ export const getPendingProducts = async (req, res) => {
       where: { approval_status: "submitted" },
       include: [
         {
+          model: Supplier,
+          as: "supplier",
+          attributes: ["supplier_id", "name", "email"],
+        },
+        {
           model: ProductVariant,
           as: "variants",
         },
@@ -39,6 +44,7 @@ export const getPendingProducts = async (req, res) => {
           as: "images",
         },
       ],
+      order: [["createdAt", "DESC"]],
     });
 
     const plain = products.map((p) => p.get({ plain: true }));
@@ -65,6 +71,11 @@ export const getProductById = async (req) => {
         product_id: productId,
       },
       include: [
+        {
+          model: Supplier,
+          as: "supplier",
+          attributes: ["supplier_id", "name", "email"],
+        },
         {
           model: ProductVariant,
           as: "variants",
@@ -94,9 +105,20 @@ export const approveProduct = async (req) => {
       };
     }
 
+    if (product.approval_status !== "submitted") {
+      return {
+        success: false,
+        message: "Product is not pending approval",
+      };
+    }
+
     await product.update({
       approval_status: "approved",
-      lifecycle_status: "active", // optional: publish to marketplace
+      lifecycle_status: "active",
+      approved_by: req.user?.userId ?? null,
+      approved_at: new Date(),
+      rejection_reason: null,
+      rejected_at: null,
     });
 
     return {
@@ -135,9 +157,27 @@ export const rejectProduct = async (req) => {
   }
 };
 
+const numOrNull = (v) => {
+  if (v === undefined) return undefined;
+  if (v === null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
 export const updateProduct = async (req) => {
   try {
-    const { product_id, title, description, brand, variants } = req.body;
+    const {
+      product_id,
+      title,
+      description,
+      brand,
+      variants,
+      bulk_price,
+      transfer_price,
+      mrp,
+      rvp_enabled,
+      rto_enabled,
+    } = req.body;
 
     if (!product_id) {
       return { success: false, error: "Product ID is required" };
@@ -152,6 +192,12 @@ export const updateProduct = async (req) => {
     if (title !== undefined) productUpdates.title = title;
     if (description !== undefined) productUpdates.description = description;
     if (brand !== undefined) productUpdates.brand = brand;
+    if (bulk_price !== undefined) productUpdates.bulk_price = numOrNull(bulk_price);
+    if (transfer_price !== undefined)
+      productUpdates.transfer_price = numOrNull(transfer_price);
+    if (mrp !== undefined) productUpdates.mrp = numOrNull(mrp);
+    if (rvp_enabled !== undefined) productUpdates.rvp_enabled = Boolean(rvp_enabled);
+    if (rto_enabled !== undefined) productUpdates.rto_enabled = Boolean(rto_enabled);
     if (Object.keys(productUpdates).length > 0) {
       await product.update(productUpdates);
     }
@@ -161,12 +207,24 @@ export const updateProduct = async (req) => {
         if (!v.variant_id) continue;
         const allowed = {
           sku: v.sku,
-          variant_name: v.variant_name,
-          variant_price: v.variant_price,
-          variant_stock: v.variant_stock,
+          title: v.variant_name ?? v.title,
+          price:
+            v.variant_price !== undefined && v.variant_price !== ""
+              ? Number(v.variant_price)
+              : v.price !== undefined
+                ? Number(v.price)
+                : undefined,
+          inventory_quantity:
+            v.variant_stock !== undefined
+              ? Number(v.variant_stock)
+              : v.inventory_quantity !== undefined
+                ? Number(v.inventory_quantity)
+                : undefined,
           weight_grams: v.weight_grams,
-          dimensions_cm: v.dimensions_cm,
-          hsn_code: v.hsn_code,
+          attributes:
+            v.dimensions_cm !== undefined
+              ? { ...(v.attributes || {}), dimensions_cm: v.dimensions_cm }
+              : v.attributes,
           is_active: v.is_active,
         };
         const clean = Object.fromEntries(
@@ -182,6 +240,7 @@ export const updateProduct = async (req) => {
 
     const updated = await Product.findByPk(product_id, {
       include: [
+        { model: Supplier, as: "supplier", attributes: ["supplier_id", "name", "email"] },
         { model: ProductVariant, as: "variants" },
         { model: ProductImage, as: "images" },
       ],
@@ -369,6 +428,7 @@ export const getLiveProducts = async (req) => {
           as: "images",
         },
       ],
+      order: [["createdAt", "DESC"]],
     });
 
     return {

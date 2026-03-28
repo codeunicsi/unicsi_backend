@@ -829,6 +829,20 @@ export const add_products = async (req) => {
           throw new Error(`SKU already exists: ${variant.sku}`);
         }
   
+        const dim = variant.dimension_cm;
+        const hasDim =
+          dim &&
+          (Number(dim.height) > 0 ||
+            Number(dim.width) > 0 ||
+            Number(dim.length) > 0);
+        const baseAttrs =
+          variant.attributes && typeof variant.attributes === "object"
+            ? variant.attributes
+            : {};
+        const attributes = hasDim
+          ? { ...baseAttrs, dimension_cm: dim }
+          : baseAttrs;
+
         const variantRecord = await ProductVariant.create(
           {
             product_id: productId,
@@ -840,7 +854,7 @@ export const add_products = async (req) => {
             option1: variant.option1,
             option2: variant.option2,
             option3: variant.option3,
-            attributes: variant.attributes || {},
+            attributes,
           },
           { transaction }
         );
@@ -915,6 +929,7 @@ export const get_products = async (req) => {
           ],
         ],
       },
+      order: [["createdAt", "DESC"]],
     });
 
     // const productImages = await ProductImage.findAll({
@@ -949,39 +964,65 @@ export const update_product = async (req) => {
     const role = req.user.role;
 
     if (!supplier_id) {
+      await t.rollback();
       return { success: false, error: "Supplier ID is required!" };
     }
 
     if (role !== "SUPPLIER") {
+      await t.rollback();
       return { success: false, error: "Unauthorized!" };
     }
 
     if (!product_id) {
+      await t.rollback();
       return { success: false, error: "Product ID is required!" };
     }
 
-        const { title, description, brand, variants = [], images = [], category_id: bodyCategoryId } =
-                req.body;
-        const categoryId = bodyCategoryId ?? req.body.categoryId;
+    const { title, description, brand, images = [], category_id: bodyCategoryId } = req.body;
+    const categoryId = bodyCategoryId ?? req.body.categoryId;
+
+    let variants = req.body.variants;
+    if (typeof variants === "string") {
+      try {
+        variants = JSON.parse(variants);
+      } catch {
+        variants = [];
+      }
+    }
+    if (!Array.isArray(variants)) variants = [];
 
     const product = await Product.findByPk(product_id);
 
     if (!product) {
+      await t.rollback();
       return { success: false, error: "Product not found!" };
     }
 
-        if (categoryId != null && categoryId !== "") {
-            const category = await Category.findOne({
-                where: { id: categoryId, is_active: true },
-            });
-            if (!category) {
-                return { success: false, error: "Invalid or inactive category. Please choose an active category." };
-            }
-        }
+    if (product.supplier_id !== supplier_id) {
+      await t.rollback();
+      return { success: false, error: "Unauthorized!" };
+    }
 
-        const updatePayload = { title, description, brand };
-        if (categoryId !== undefined) updatePayload.category_id = categoryId || null;
-        await product.update(updatePayload);
+    if (categoryId != null && categoryId !== "") {
+      const category = await Category.findOne({
+        where: { id: categoryId, is_active: true },
+      });
+      if (!category) {
+        await t.rollback();
+        return {
+          success: false,
+          error: "Invalid or inactive category. Please choose an active category.",
+        };
+      }
+    }
+
+    const updatePayload = { title, description, brand };
+    if (categoryId !== undefined) updatePayload.category_id = categoryId || null;
+
+    const status = req.body.approval_status;
+    if (status === "draft" || status === "submitted") {
+      updatePayload.approval_status = status;
+    }
 
     if (req.body.bulk_price !== undefined) {
       updatePayload.bulk_price = req.body.bulk_price;
@@ -1009,11 +1050,47 @@ export const update_product = async (req) => {
       updatePayload.bulk_price_refresh_days = req.body.bulk_price_refresh_days;
     }
 
-    await product.update(updatePayload);
+    await product.update(updatePayload, { transaction: t });
 
     for (const variant of variants) {
-      await ProductVariant.update(variant, {
-        where: { variant_id: variant.variant_id },
+      if (!variant?.variant_id) continue;
+      const {
+        variant_id,
+        id: _clientId,
+        images: _img,
+        dimension_cm,
+        attributes: bodyAttributes,
+        ...rest
+      } = variant;
+      const payload = { ...rest };
+      const hasDim =
+        dimension_cm &&
+        typeof dimension_cm === "object" &&
+        (Number(dimension_cm.height) ||
+          Number(dimension_cm.width) ||
+          Number(dimension_cm.length));
+      if (hasDim) {
+        const existing = await ProductVariant.findOne({
+          where: { variant_id, product_id },
+          transaction: t,
+        });
+        const prevAttrs =
+          existing?.attributes && typeof existing.attributes === "object"
+            ? { ...existing.attributes }
+            : {};
+        if (
+          bodyAttributes &&
+          typeof bodyAttributes === "object" &&
+          !Array.isArray(bodyAttributes)
+        ) {
+          Object.assign(prevAttrs, bodyAttributes);
+        }
+        prevAttrs.dimension_cm = dimension_cm;
+        payload.attributes = prevAttrs;
+      }
+      await ProductVariant.update(payload, {
+        where: { variant_id, product_id },
+        transaction: t,
       });
     }
 

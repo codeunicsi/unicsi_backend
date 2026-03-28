@@ -57,10 +57,18 @@ export async function finalizeUploadedProductImage(req, file) {
     if (!isS3ProductImagesEnabled()) {
       return localImageUrl(req, file);
     }
-    const buffer = await fs.readFile(file.path);
-    const url = await uploadBufferToS3(buffer, file.originalname, file.mimetype);
-    await fs.unlink(file.path).catch(() => {});
-    return url;
+    try {
+      const buffer = await fs.readFile(file.path);
+      const url = await uploadBufferToS3(buffer, file.originalname, file.mimetype);
+      await fs.unlink(file.path).catch(() => {});
+      return url;
+    } catch (err) {
+      console.warn(
+        "[product images] S3 upload failed, serving from disk:",
+        err?.Code || err?.name || err?.message,
+      );
+      return localImageUrl(req, file);
+    }
   }
 
   return null;

@@ -106,13 +106,35 @@ export const Product = sequelize.define(
     approved_by: {
       type: DataTypes.UUID,
       allowNull: true,
-      defaultValue: DataTypes.UUIDV4,
     },
 
     approved_at: {
       type: DataTypes.DATE,
       allowNull: true,
-      defaultValue: DataTypes.NOW,
+    },
+
+    rejection_reason: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+
+    rejected_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+
+    /** Return / refund policy flags (admin sets at approval). */
+    rvp_enabled: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
+
+    /** RTO (return-to-origin) allowed for this listing. */
+    rto_enabled: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
     },
   },
   {
